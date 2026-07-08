@@ -34,7 +34,13 @@ public class PatientController {
             // success screen Register.jsx already shows.
             String token = jwtUtil.generateToken(patient.getId(), patient.getEmail(), "PATIENT");
             return ResponseEntity.ok(new AuthResponse(
-                    patient.getId(), patient.getFullName(), patient.getEmail(), "PATIENT", token
+                    patient.getId(),
+                    patient.getFullName(),
+                    patient.getEmail(),
+                    patient.getContactNumber(),
+                    patient.getDateOfBirth() != null ? patient.getDateOfBirth().toString() : null,
+                    "PATIENT",
+                    token
             ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
