@@ -20,4 +20,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "AppointMed"
+include(":mobile")
 include(":app")

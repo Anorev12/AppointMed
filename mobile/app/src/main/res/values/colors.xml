@@ -21,4 +21,14 @@
     <color name="am_staff_note">#7C93A8</color>
     <color name="am_white">#FFFFFF</color>
     <color name="am_black">#000000</color>
+    <color name="ink">#1A2B4C</color>
+    <color name="ink_soft">#6B7A99</color>
+    <color name="stamp">#2F5FDE</color>
+    <color name="paper">#F5F7FB</color>
+    <color name="paper_card">#FFFFFF</color>
+    <color name="danger">#D64545</color>
+    <color name="danger_soft">#FBEAEA</color>
+    <color name="success">#2E9E5B</color>
+    <color name="success_soft">#E9F7EF</color>
+    <color name="border">#E3E8F0</color>
 </resources>

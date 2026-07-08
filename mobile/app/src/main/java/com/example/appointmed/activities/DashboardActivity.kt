@@ -3,15 +3,18 @@ package com.example.appointmed.activities
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.example.appointmed.R
 import com.example.appointmed.databinding.ActivityDashboardBinding
+import com.example.appointmed.fragments.BookFragment
+import com.example.appointmed.fragments.HistoryFragment
+import com.example.appointmed.fragments.HomeFragment
+import com.example.appointmed.fragments.ProfileFragment
 import com.example.appointmed.utils.TokenManager
 
 /**
- * Patient Dashboard. Mirrors React PatientDashboard.jsx:
- * displays the logged-in user's fullName, email, contactNumber, and
- * dateOfBirth — all read from the session saved by TokenManager during
- * login/register (no separate /me endpoint exists yet, per the backend
- * contract). Logout clears the session and returns to Login.
+ * Patient Dashboard shell. Hosts four fragments (Home, Book, History,
+ * Profile) swapped via the bottom navigation bar — the mobile equivalent
+ * of the React PatientDashboard's sidebar + view-state routing.
  */
 class DashboardActivity : AppCompatActivity() {
 
@@ -26,22 +29,40 @@ class DashboardActivity : AppCompatActivity() {
         tokenManager = TokenManager(this)
 
         val user = tokenManager.getUser()
-
         if (user == null) {
-            // No valid session — send back to Login
             goToLogin()
             return
         }
 
-        binding.tvWelcome.text = "Welcome, ${user.fullName}"
-        binding.tvEmail.text = user.email
-        binding.tvContact.text = user.contactNumber
-        binding.tvDateOfBirth.text = user.dateOfBirth
-
-        binding.btnLogout.setOnClickListener {
-            tokenManager.clearSession()
-            goToLogin()
+        if (savedInstanceState == null) {
+            showFragment(HomeFragment())
         }
+
+        binding.bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> showFragment(HomeFragment())
+                R.id.nav_book -> showFragment(BookFragment())
+                R.id.nav_history -> showFragment(HistoryFragment())
+                R.id.nav_profile -> showFragment(ProfileFragment())
+            }
+            true
+        }
+    }
+
+    /** Lets fragments (e.g. Book, after a successful booking) jump to another tab. */
+    fun selectTab(itemId: Int) {
+        binding.bottomNav.selectedItemId = itemId
+    }
+
+    private fun showFragment(fragment: androidx.fragment.app.Fragment) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, fragment)
+            .commit()
+    }
+
+    fun logout() {
+        tokenManager.clearSession()
+        goToLogin()
     }
 
     private fun goToLogin() {
