@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/am_paper">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- ===================== COMPACT BRAND HEADER ===================== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@color/am_ink"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="18dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Appoint"
+                android:textColor="@color/am_white"
+                android:textSize="20sp"
+                android:fontFamily="@font/zilla_slab_bold"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Med"
+                android:textColor="@color/am_stamp"
+                android:textSize="20sp"
+                android:fontFamily="@font/zilla_slab_bold"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- ===================== FORM PANEL ===================== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/am_paper_raised"
+            android:paddingHorizontal="28dp"
+            android:paddingTop="32dp"
+            android:paddingBottom="32dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PATIENT REGISTRATION"
+                android:textColor="@color/am_stamp_dark"
+                android:textSize="11sp"
+                android:letterSpacing="0.1"
+                android:fontFamily="@font/ibm_plex_mono_regular" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Create your account"
+                android:textColor="@color/am_ink"
+                android:textSize="30sp"
+                android:fontFamily="@font/zilla_slab_semibold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp"
+                android:text="Takes about a minute. You'll be able to book right after."
+                android:textColor="@color/am_ink_soft"
+                android:textSize="14sp"
+                android:fontFamily="@font/work_sans_regular" />
+
+            <!-- Full name -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Full name"
+                android:textColor="@color/am_ink"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp"
+                android:fontFamily="@font/work_sans_medium" />
+
+            <EditText
+                android:id="@+id/etFullName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_input_field"
+                android:inputType="textPersonName|textCapWords"
+                android:padding="13dp"
+                android:textSize="15sp"
+                android:textColor="@color/am_ink"
+                android:fontFamily="@font/work_sans_regular"
+                android:autofillHints="name" />
+
+            <TextView
+                android:id="@+id/tvFullNameError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/am_alert"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"
+                android:fontFamily="@font/work_sans_regular" />
+
+            <!-- Date of birth -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Date of birth"
+                android:textColor="@color/am_ink"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginTop="18dp"
+                android:layout_marginBottom="6dp"
+                android:fontFamily="@font/work_sans_medium" />
+
+            <EditText
+                android:id="@+id/etDob"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_input_field"
+                android:hint="YYYY-MM-DD"
+                android:textColorHint="@color/am_ink_soft"
+                android:inputType="none"
+                android:focusable="false"
+                android:clickable="true"
+                android:padding="13dp"
+                android:textSize="15sp"
+                android:textColor="@color/am_ink"
+                android:fontFamily="@font/work_sans_regular" />
+
+            <TextView
+                android:id="@+id/tvDobError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/am_alert"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"
+                android:fontFamily="@font/work_sans_regular" />
+
+            <!-- Contact number -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Contact number"
+                android:textColor="@color/am_ink"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginTop="18dp"
+                android:layout_marginBottom="6dp"
+                android:fontFamily="@font/work_sans_medium" />
+
+            <EditText
+                android:id="@+id/etContact"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_input_field"
+                android:hint="09xx xxx xxxx"
+                android:textColorHint="@color/am_ink_soft"
+                android:inputType="phone"
+                android:padding="13dp"
+                android:textSize="15sp"
+                android:textColor="@color/am_ink"
+                android:fontFamily="@font/work_sans_regular"
+                android:autofillHints="phone" />
+
+            <TextView
+                android:id="@+id/tvContactError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/am_alert"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"
+                android:fontFamily="@font/work_sans_regular" />
+
+            <!-- Email -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Email address"
+                android:textColor="@color/am_ink"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginTop="18dp"
+                android:layout_marginBottom="6dp"
+                android:fontFamily="@font/work_sans_medium" />
+
+            <EditText
+                android:id="@+id/etEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_input_field"
+                android:inputType="textEmailAddress"
+                android:padding="13dp"
+                android:textSize="15sp"
+                android:textColor="@color/am_ink"
+                android:fontFamily="@font/work_sans_regular"
+                android:autofillHints="emailAddress" />
+
+            <TextView
+                android:id="@+id/tvEmailError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/am_alert"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"
+                android:fontFamily="@font/work_sans_regular" />
+
+            <!-- Password -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Password"
+                android:textColor="@color/am_ink"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginTop="18dp"
+                android:layout_marginBottom="6dp"
+                android:fontFamily="@font/work_sans_medium" />
+
+            <EditText
+                android:id="@+id/etPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_input_field"
+                android:inputType="textPassword"
+                android:padding="13dp"
+                android:textSize="15sp"
+                android:textColor="@color/am_ink"
+                android:fontFamily="@font/work_sans_regular"
+                android:autofillHints="newPassword" />
+
+            <TextView
+                android:id="@+id/tvPasswordError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/am_alert"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"
+                android:fontFamily="@font/work_sans_regular" />
+
+            <!-- Confirm password -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Confirm password"
+                android:textColor="@color/am_ink"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginTop="18dp"
+                android:layout_marginBottom="6dp"
+                android:fontFamily="@font/work_sans_medium" />
+
+            <EditText
+                android:id="@+id/etConfirmPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_input_field"
+                android:inputType="textPassword"
+                android:padding="13dp"
+                android:textSize="15sp"
+                android:textColor="@color/am_ink"
+                android:fontFamily="@font/work_sans_regular"
+                android:autofillHints="newPassword" />
+
+            <TextView
+                android:id="@+id/tvConfirmPasswordError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/am_alert"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"
+                android:fontFamily="@font/work_sans_regular" />
+
+            <!-- Register button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRegister"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Create account"
+                android:textAllCaps="false"
+                android:textSize="15sp"
+                android:paddingVertical="14dp"
+                android:textColor="@color/am_white"
+                app:backgroundTint="@color/am_ink"
+                app:cornerRadius="4dp"
+                app:icon="@drawable/ic_dot"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                android:fontFamily="@font/work_sans_medium" />
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:visibility="gone" />
+
+            <!-- Switch to Login -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="22dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Already have an account? "
+                    android:textColor="@color/am_ink_soft"
+                    android:textSize="14sp"
+                    android:fontFamily="@font/work_sans_regular" />
+
+                <TextView
+                    android:id="@+id/tvLoginLink"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Log in"
+                    android:textColor="@color/am_stamp_dark"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:padding="4dp"
+                    android:fontFamily="@font/work_sans_medium" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="30dp"
+                android:text="Doctor or clinic staff? Accounts are set up by your administrator — contact the front desk for access."
+                android:textColor="@color/am_staff_note"
+                android:textSize="12sp"
+                android:lineSpacingMultiplier="1.3"
+                android:fontFamily="@font/work_sans_regular" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

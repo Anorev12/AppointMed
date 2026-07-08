@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="am_ink">#2F5D8A</color>
+    <color name="am_ink_soft">#4A7BA6</color>
+    <color name="am_paper">#F2F7FC</color>
+    <color name="am_paper_raised">#FFFFFF</color>
+    <color name="am_line">#D7E3EE</color>
+    <color name="am_stamp">#5B9BD5</color>
+    <color name="am_stamp_dark">#3E7CB1</color>
+    <color name="am_sage">#5FA8D3</color>
+    <color name="am_alert">#C15B4A</color>
+    <color name="am_left_sub_text">#C7DCEF</color>
+    <color name="am_left_foot_text">#B0CCE5</color>
+    <color name="am_ticket_head_text">#A9C6E2</color>
+    <color name="am_slot_open">#8FD0F0</color>
+    <color name="am_slot_reserved">#8CA9C4</color>
+    <color name="am_ticket_border">#29FFFFFF</color>
+    <color name="am_ticket_dashed">#47FFFFFF</color>
+    <color name="am_slot_active_bg">#385B9BD5</color>
+    <color name="am_input_bg">#F7FAFD</color>
+    <color name="am_staff_note">#7C93A8</color>
+    <color name="am_white">#FFFFFF</color>
+    <color name="am_black">#000000</color>
+</resources>

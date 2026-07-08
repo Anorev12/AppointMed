@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/am_paper">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- ===================== COMPACT BRAND HEADER ===================== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@color/am_ink"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="18dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Appoint"
+                android:textColor="@color/am_white"
+                android:textSize="20sp"
+                android:fontFamily="@font/zilla_slab_bold"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Med"
+                android:textColor="@color/am_stamp"
+                android:textSize="20sp"
+                android:fontFamily="@font/zilla_slab_bold"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- ===================== FORM PANEL ===================== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="671dp"
+            android:background="@color/am_paper_raised"
+            android:orientation="vertical"
+            android:paddingHorizontal="28dp"
+            android:paddingTop="32dp"
+            android:paddingBottom="32dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/ibm_plex_mono_regular"
+                android:letterSpacing="0.1"
+                android:text="PATIENT · DOCTOR · ADMIN"
+                android:textColor="@color/am_stamp_dark"
+                android:textSize="11sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:fontFamily="@font/zilla_slab_semibold"
+                android:text="Welcome back"
+                android:textColor="@color/am_ink"
+                android:textSize="30sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp"
+                android:fontFamily="@font/work_sans_regular"
+                android:text="Log in to book, reschedule, or check your upcoming visits."
+                android:textColor="@color/am_ink_soft"
+                android:textSize="14sp" />
+
+            <!-- Email field -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:fontFamily="@font/work_sans_medium"
+                android:text="Email address"
+                android:textColor="@color/am_ink"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="emailAddress"
+                android:background="@drawable/bg_input_field"
+                android:fontFamily="@font/work_sans_regular"
+                android:inputType="textEmailAddress"
+                android:padding="13dp"
+                android:textColor="@color/am_ink"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tvEmailError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/work_sans_regular"
+                android:textColor="@color/am_alert"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <!-- Password field -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:layout_marginBottom="6dp"
+                android:fontFamily="@font/work_sans_medium"
+                android:text="Password"
+                android:textColor="@color/am_ink"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="password"
+                android:background="@drawable/bg_input_field"
+                android:fontFamily="@font/work_sans_regular"
+                android:inputType="textPassword"
+                android:padding="13dp"
+                android:textColor="@color/am_ink"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tvPasswordError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/work_sans_regular"
+                android:textColor="@color/am_alert"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <!-- Forgot password -->
+            <TextView
+                android:id="@+id/btnForgotPassword"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="14dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:fontFamily="@font/work_sans_regular"
+                android:padding="4dp"
+                android:text="Forgot password?"
+                android:textColor="@color/am_ink_soft"
+                android:textSize="13sp" />
+
+            <!-- Login button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLogin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:fontFamily="@font/work_sans_medium"
+                android:paddingVertical="14dp"
+                android:text="Log in"
+                android:textAllCaps="false"
+                android:textColor="@color/am_white"
+                android:textSize="15sp"
+                app:backgroundTint="@color/am_ink"
+                app:cornerRadius="4dp"
+                app:icon="@drawable/ic_dot"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp" />
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:visibility="gone" />
+
+            <!-- Switch to Register -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/work_sans_regular"
+                    android:text="New to AppointMed? "
+                    android:textColor="@color/am_ink_soft"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tvRegisterLink"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:fontFamily="@font/work_sans_medium"
+                    android:padding="4dp"
+                    android:text="Register as a patient"
+                    android:textColor="@color/am_stamp_dark"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

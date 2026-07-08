@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Base.Theme.AppointMed" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color used for status bar, default component tint -->
+        <item name="colorPrimary">@color/am_ink</item>
+        <item name="colorPrimaryVariant">@color/am_ink_soft</item>
+        <item name="colorOnPrimary">@color/am_white</item>
+
+        <!-- Secondary accent color -->
+        <item name="colorSecondary">@color/am_stamp</item>
+        <item name="colorSecondaryVariant">@color/am_stamp_dark</item>
+        <item name="colorOnSecondary">@color/am_white</item>
+
+        <!-- Screen background matches the React paper background -->
+        <item name="android:windowBackground">@color/am_paper</item>
+        <item name="android:colorBackground">@color/am_paper</item>
+
+        <!-- Status bar matches the ink brand panel -->
+        <item name="android:statusBarColor" tools:targetApi="l">@color/am_ink</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+
+        <!-- Default text color -->
+        <item name="android:textColorPrimary">@color/am_ink</item>
+        <item name="android:textColorSecondary">@color/am_ink_soft</item>
+    </style>
+
+    <style name="Theme.AppointMed" parent="Base.Theme.AppointMed" />
+
+</resources>
