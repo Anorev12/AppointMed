@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import "./Appointmed.css";
-import { AvailabilityAPI } from "./api";
+import "../../shared/styles/Appointmed.css";
+import { AvailabilityAPI } from "./api/availabilityApi";
 
 /**
  * AppointMed — Doctor Dashboard
