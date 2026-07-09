@@ -1,98 +1,202 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import "../../shared/styles/Appointmed.css";
+import { DoctorsAPI, AppointmentsAPI, PatientProfileAPI } from "./api/patientApi";
 
 /**
  * AppointMed — Patient Dashboard
- * Covers: FR-006 to FR-013 (browse doctors, book, reschedule/cancel, history)
+ * Covers: FR-006 to FR-013 (browse doctors, book, cancel, history, profile)
  *
- * NOTE: this slice is still on local mock data end-to-end (booking,
- * cancellation, profile edits). When the backend endpoints for these land,
- * add a features/patient/api/patientApi.js alongside this file, following
- * the same pattern as the doctor and admin slices.
+ * Fully wired to the backend:
+ *  - GET  /api/doctors                         (browse doctors)
+ *  - GET  /api/doctors/{id}/slots?date=...      (open slots for a day)
+ *  - GET  /api/patient/appointments             (my appointments)
+ *  - POST /api/patient/appointments             (book)
+ *  - PUT  /api/patient/appointments/{id}/cancel (cancel)
+ *  - GET  /api/patient/profile                  (my profile)
+ *  - PUT  /api/patient/profile                  (update profile)
  */
 
-const DOCTORS = [
-  { id: 1, name: "Dr. Reyes", specialization: "Pediatrics" },
-  { id: 2, name: "Dr. Tan", specialization: "Internal Medicine" },
-  { id: 3, name: "Dr. Cruz", specialization: "Dermatology" },
-];
-
-const SLOTS_BY_DOCTOR = {
-  1: [
-    { time: "09:00", reserved: false },
-    { time: "09:30", reserved: true },
-    { time: "10:00", reserved: false },
-    { time: "10:30", reserved: false },
-  ],
-  2: [
-    { time: "10:00", reserved: false },
-    { time: "10:30", reserved: false },
-    { time: "11:00", reserved: true },
-    { time: "11:30", reserved: false },
-  ],
-  3: [
-    { time: "13:00", reserved: false },
-    { time: "13:30", reserved: false },
-    { time: "14:00", reserved: true },
-    { time: "14:30", reserved: false },
-  ],
-};
-
-const INITIAL_APPOINTMENTS = [
-  { id: "APT-102938", doctor: "Dr. Reyes", specialization: "Pediatrics", date: "2026-07-10", time: "09:00", status: "confirmed" },
-  { id: "APT-100221", doctor: "Dr. Cruz", specialization: "Dermatology", date: "2026-06-28", time: "14:00", status: "confirmed" },
-  { id: "APT-099120", doctor: "Dr. Tan", specialization: "Internal Medicine", date: "2026-06-14", time: "11:00", status: "cancelled" },
-];
-
-function makeReference() {
-  return `APT-${Math.floor(100000 + Math.random() * 900000)}`;
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
 }
 
-export default function PatientDashboard({ patientName = "Juan Dela Cruz", onLogout }) {
+export default function PatientDashboard({ patientName = "Patient", onLogout }) {
   const [view, setView] = useState("home"); // home | book | history | profile
-  const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
+
+  // ---- Doctors ----
+  const [doctors, setDoctors] = useState([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(true);
+  const [doctorsError, setDoctorsError] = useState("");
+
+  // ---- Appointments ----
+  const [appointments, setAppointments] = useState([]);
+  const [apptsLoading, setApptsLoading] = useState(true);
+  const [apptsError, setApptsError] = useState("");
+  const [cancellingId, setCancellingId] = useState(null);
+
+  // ---- Booking flow ----
   const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [slots, setSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [confirmedRef, setConfirmedRef] = useState(null);
+  const [booking, setBooking] = useState(false);
+  const [bookError, setBookError] = useState("");
+  const [confirmedAppt, setConfirmedAppt] = useState(null);
+
+  // ---- Profile ----
   const [profile, setProfile] = useState({
     fullName: patientName,
-    email: "juan.delacruz@email.com",
-    contact: "0917 123 4567",
-    medicalHistory: "No known allergies.",
+    email: "",
+    contact: "",
+    dateOfBirth: "",
+    medicalHistory: "",
   });
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
 
-  const upcoming = appointments.filter((a) => a.status === "confirmed");
+  useEffect(() => {
+    loadDoctors();
+    loadAppointments();
+    loadProfile();
+  }, []);
 
-  function handleBook() {
+  async function loadDoctors() {
+    setDoctorsLoading(true);
+    setDoctorsError("");
+    try {
+      const data = await DoctorsAPI.list();
+      setDoctors(data || []);
+    } catch (err) {
+      setDoctorsError(err.message || "Couldn't load the list of doctors.");
+    } finally {
+      setDoctorsLoading(false);
+    }
+  }
+
+  async function loadAppointments() {
+    setApptsLoading(true);
+    setApptsError("");
+    try {
+      const data = await AppointmentsAPI.list();
+      setAppointments(data || []);
+    } catch (err) {
+      setApptsError(err.message || "Couldn't load your appointments.");
+    } finally {
+      setApptsLoading(false);
+    }
+  }
+
+  async function loadProfile() {
+    setProfileLoading(true);
+    setProfileError("");
+    try {
+      const data = await PatientProfileAPI.get();
+      setProfile({
+        fullName: data.fullName || "",
+        email: data.email || "",
+        contact: data.contactNumber || "",
+        dateOfBirth: data.dateOfBirth || "",
+        medicalHistory: data.medicalHistory || "",
+      });
+    } catch (err) {
+      setProfileError(err.message || "Couldn't load your profile.");
+    } finally {
+      setProfileLoading(false);
+    }
+  }
+
+  const loadSlots = useCallback(async (doctorId, date) => {
+    if (!doctorId || !date) return;
+    setSlotsLoading(true);
+    setSlotsError("");
+    setSlots([]);
+    try {
+      const data = await DoctorsAPI.getSlots(doctorId, date);
+      setSlots(data || []);
+    } catch (err) {
+      setSlotsError(err.message || "Couldn't load open slots for that day.");
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, []);
+
+  function pickDoctor(doctorId) {
+    setSelectedDoctor(doctorId);
+    setSelectedSlot(null);
+    setConfirmedAppt(null);
+    setBookError("");
+    loadSlots(doctorId, selectedDate);
+  }
+
+  function changeDate(date) {
+    setSelectedDate(date);
+    setSelectedSlot(null);
+    setConfirmedAppt(null);
+    setBookError("");
+    if (selectedDoctor) loadSlots(selectedDoctor, date);
+  }
+
+  async function handleBook() {
     if (!selectedDoctor || !selectedSlot) return;
-    const ref = makeReference();
-    const doctor = DOCTORS.find((d) => d.id === selectedDoctor);
-    setAppointments((prev) => [
-      {
-        id: ref,
-        doctor: doctor.name,
-        specialization: doctor.specialization,
-        date: "2026-07-14",
-        time: selectedSlot,
-        status: "confirmed",
-      },
-      ...prev,
-    ]);
-    setConfirmedRef(ref);
+    setBooking(true);
+    setBookError("");
+    try {
+      const appt = await AppointmentsAPI.book(selectedDoctor, selectedDate, selectedSlot);
+      setConfirmedAppt(appt);
+      setAppointments((prev) => [appt, ...prev]);
+      loadSlots(selectedDoctor, selectedDate); // that slot is now reserved
+    } catch (err) {
+      setBookError(err.message || "Couldn't book that appointment.");
+    } finally {
+      setBooking(false);
+    }
   }
 
   function resetBooking() {
     setSelectedDoctor(null);
     setSelectedSlot(null);
-    setConfirmedRef(null);
+    setConfirmedAppt(null);
     setView("history");
   }
 
-  function cancelAppointment(id) {
-    setAppointments((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status: "cancelled" } : a))
-    );
+  async function cancelAppointment(id) {
+    setCancellingId(id);
+    setApptsError("");
+    try {
+      const updated = await AppointmentsAPI.cancel(id);
+      setAppointments((prev) => prev.map((a) => (a.id === id ? updated : a)));
+    } catch (err) {
+      setApptsError(err.message || "Couldn't cancel that appointment.");
+    } finally {
+      setCancellingId(null);
+    }
   }
+
+  async function saveProfile() {
+    setSaving(true);
+    setSaveMessage("");
+    setProfileError("");
+    try {
+      const updated = await PatientProfileAPI.update(
+        profile.fullName,
+        profile.contact,
+        profile.medicalHistory
+      );
+      setProfile((p) => ({ ...p, fullName: updated.fullName, contact: updated.contactNumber }));
+      setSaveMessage("Saved.");
+    } catch (err) {
+      setProfileError(err.message || "Couldn't save your profile.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const upcoming = appointments.filter((a) => a.status === "CONFIRMED");
+  const selectedDoctorObj = doctors.find((d) => d.id === selectedDoctor);
 
   return (
     <div className="db-shell">
@@ -132,10 +236,10 @@ export default function PatientDashboard({ patientName = "Juan Dela Cruz", onLog
 
         <div className="db-sidebar-foot">
           <div className="db-avatar">
-            {profile.fullName.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+            {(profile.fullName || patientName).split(" ").map((w) => w[0]).slice(0, 2).join("")}
           </div>
           <div>
-            <div className="db-foot-name">{profile.fullName}</div>
+            <div className="db-foot-name">{profile.fullName || patientName}</div>
             <div className="db-foot-role">Patient</div>
           </div>
           <button className="db-logout" onClick={onLogout} title="Log out">
@@ -156,7 +260,7 @@ export default function PatientDashboard({ patientName = "Juan Dela Cruz", onLog
             </div>
             <div className="db-topbar-sub">
               {view === "home" && "Here's what's coming up."}
-              {view === "book" && "Pick a doctor, then a time slot."}
+              {view === "book" && "Pick a doctor, then a date and time."}
               {view === "history" && "Everything you've booked, past and upcoming."}
               {view === "profile" && "Keep your details up to date."}
             </div>
@@ -169,15 +273,15 @@ export default function PatientDashboard({ patientName = "Juan Dela Cruz", onLog
             <>
               <div className="db-stats-grid">
                 <div className="db-stat-card">
-                  <div className="db-stat-value">{upcoming.length}</div>
+                  <div className="db-stat-value">{apptsLoading ? "…" : upcoming.length}</div>
                   <div className="db-stat-label">Upcoming appointments</div>
                 </div>
                 <div className="db-stat-card">
-                  <div className="db-stat-value">{appointments.length}</div>
+                  <div className="db-stat-value">{apptsLoading ? "…" : appointments.length}</div>
                   <div className="db-stat-label">Total visits on record</div>
                 </div>
                 <div className="db-stat-card">
-                  <div className="db-stat-value">{DOCTORS.length}</div>
+                  <div className="db-stat-value">{doctorsLoading ? "…" : doctors.length}</div>
                   <div className="db-stat-label">Doctors available</div>
                 </div>
               </div>
@@ -190,18 +294,21 @@ export default function PatientDashboard({ patientName = "Juan Dela Cruz", onLog
                   </button>
                 </div>
                 <div className="db-panel-body">
-                  {upcoming.length === 0 ? (
+                  {apptsError && <div className="db-error">{apptsError}</div>}
+                  {apptsLoading ? (
+                    <div className="db-empty">Loading…</div>
+                  ) : upcoming.length === 0 ? (
                     <div className="db-empty">No upcoming appointments yet.</div>
                   ) : (
                     upcoming.slice(0, 1).map((a) => (
                       <div className="db-row" key={a.id}>
                         <div className="db-row-time">{a.time}</div>
                         <div className="db-row-avatar">
-                          {a.doctor.split(" ")[1]?.[0] || "D"}
+                          {a.doctorName?.split(" ")[1]?.[0] || "D"}
                         </div>
                         <div className="db-row-main">
-                          <div className="db-row-title">{a.doctor} · {a.specialization}</div>
-                          <div className="db-row-sub">{a.date} · Ref {a.id}</div>
+                          <div className="db-row-title">{a.doctorName} · {a.specialization}</div>
+                          <div className="db-row-sub">{a.date} · Ref {a.reference}</div>
                         </div>
                         <span className="db-badge confirmed">Confirmed</span>
                       </div>
@@ -220,42 +327,66 @@ export default function PatientDashboard({ patientName = "Juan Dela Cruz", onLog
                   <div className="db-panel-title">Choose a doctor</div>
                 </div>
                 <div className="db-panel-body">
-                  <div className="db-doctor-grid">
-                    {DOCTORS.map((doc) => (
-                      <div
-                        key={doc.id}
-                        className={`db-doctor-card${selectedDoctor === doc.id ? " is-selected" : ""}`}
-                        onClick={() => {
-                          setSelectedDoctor(doc.id);
-                          setSelectedSlot(null);
-                          setConfirmedRef(null);
-                        }}
-                      >
-                        <div className="db-doctor-name">{doc.name}</div>
-                        <div className="db-doctor-spec">{doc.specialization}</div>
-                      </div>
-                    ))}
-                  </div>
+                  {doctorsError && <div className="db-error">{doctorsError}</div>}
+                  {doctorsLoading ? (
+                    <div className="db-empty">Loading doctors…</div>
+                  ) : doctors.length === 0 ? (
+                    <div className="db-empty">No doctors available yet.</div>
+                  ) : (
+                    <div className="db-doctor-grid">
+                      {doctors.map((doc) => (
+                        <div
+                          key={doc.id}
+                          className={`db-doctor-card${selectedDoctor === doc.id ? " is-selected" : ""}`}
+                          onClick={() => pickDoctor(doc.id)}
+                        >
+                          <div className="db-doctor-name">{doc.fullName}</div>
+                          <div className="db-doctor-spec">{doc.specialization}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-                  {selectedDoctor && !confirmedRef && (
+                  {selectedDoctor && !confirmedAppt && (
                     <div style={{ marginTop: 22 }}>
+                      <div className="db-label" style={{ marginBottom: 10 }}>
+                        Date
+                      </div>
+                      <input
+                        type="date"
+                        className="db-input"
+                        style={{ marginBottom: 20, maxWidth: 220 }}
+                        value={selectedDate}
+                        min={todayStr()}
+                        onChange={(e) => changeDate(e.target.value)}
+                      />
+
                       <div className="db-label" style={{ marginBottom: 10 }}>
                         Available time slots
                       </div>
-                      <div className="db-slot-grid">
-                        {SLOTS_BY_DOCTOR[selectedDoctor].map((slot) => (
-                          <button
-                            key={slot.time}
-                            disabled={slot.reserved}
-                            className={`db-slot-btn${slot.reserved ? " is-reserved" : ""}${
-                              selectedSlot === slot.time ? " is-selected" : ""
-                            }`}
-                            onClick={() => setSelectedSlot(slot.time)}
-                          >
-                            {slot.time}
-                          </button>
-                        ))}
-                      </div>
+                      {slotsError && <div className="db-error">{slotsError}</div>}
+                      {slotsLoading ? (
+                        <div className="db-empty">Loading slots…</div>
+                      ) : slots.length === 0 ? (
+                        <div className="db-empty">
+                          This doctor has no open hours on that day. Try another date.
+                        </div>
+                      ) : (
+                        <div className="db-slot-grid">
+                          {slots.map((slot) => (
+                            <button
+                              key={slot.time}
+                              disabled={slot.reserved}
+                              className={`db-slot-btn${slot.reserved ? " is-reserved" : ""}${
+                                selectedSlot === slot.time ? " is-selected" : ""
+                              }`}
+                              onClick={() => setSelectedSlot(slot.time)}
+                            >
+                              {slot.time}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -266,13 +397,12 @@ export default function PatientDashboard({ patientName = "Juan Dela Cruz", onLog
                   <div className="db-panel-title">Confirm booking</div>
                 </div>
                 <div className="db-panel-body">
-                  {confirmedRef ? (
+                  {confirmedAppt ? (
                     <div className="db-confirm-ticket">
-                      <div className="db-confirm-code">{confirmedRef}</div>
+                      <div className="db-confirm-code">{confirmedAppt.reference}</div>
                       <div style={{ fontWeight: 600, marginBottom: 6 }}>Booking confirmed</div>
                       <div style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 14 }}>
-                        A confirmation has been sent to your email. Reminders go out
-                        24 hours and 1 hour before your visit.
+                        {confirmedAppt.doctorName} · {confirmedAppt.date} at {confirmedAppt.time}
                       </div>
                       <button className="db-btn primary sm" onClick={resetBooking}>
                         View my appointments
@@ -280,19 +410,20 @@ export default function PatientDashboard({ patientName = "Juan Dela Cruz", onLog
                     </div>
                   ) : (
                     <>
+                      {bookError && <div className="db-error">{bookError}</div>}
                       <div style={{ fontSize: 13.5, marginBottom: 14 }}>
-                        {selectedDoctor
-                          ? `${DOCTORS.find((d) => d.id === selectedDoctor).name}${
-                              selectedSlot ? ` · ${selectedSlot}` : " · select a time"
+                        {selectedDoctorObj
+                          ? `${selectedDoctorObj.fullName}${
+                              selectedSlot ? ` · ${selectedDate} · ${selectedSlot}` : " · select a date and time"
                             }`
                           : "Select a doctor to continue."}
                       </div>
                       <button
                         className="db-btn primary"
-                        disabled={!selectedDoctor || !selectedSlot}
+                        disabled={!selectedDoctor || !selectedSlot || booking}
                         onClick={handleBook}
                       >
-                        Confirm appointment
+                        {booking ? "Booking…" : "Confirm appointment"}
                       </button>
                     </>
                   )}
@@ -308,38 +439,57 @@ export default function PatientDashboard({ patientName = "Juan Dela Cruz", onLog
                 <div className="db-panel-title">Appointment history</div>
               </div>
               <div className="db-panel-body no-pad">
-                <table className="db-table">
-                  <thead>
-                    <tr>
-                      <th>Reference</th>
-                      <th>Doctor</th>
-                      <th>Date</th>
-                      <th>Time</th>
-                      <th>Status</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {appointments.map((a) => (
-                      <tr key={a.id}>
-                        <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.id}</td>
-                        <td>{a.doctor} <span style={{ color: "var(--ink-soft)" }}>· {a.specialization}</span></td>
-                        <td>{a.date}</td>
-                        <td>{a.time}</td>
-                        <td>
-                          <span className={`db-badge ${a.status}`}>{a.status}</span>
-                        </td>
-                        <td>
-                          {a.status === "confirmed" && (
-                            <button className="db-btn danger sm" onClick={() => cancelAppointment(a.id)}>
-                              Cancel
-                            </button>
-                          )}
-                        </td>
+                {apptsError && (
+                  <div className="db-error" style={{ padding: "12px 20px" }}>
+                    {apptsError}
+                  </div>
+                )}
+                {apptsLoading ? (
+                  <div className="db-empty" style={{ padding: 20 }}>
+                    Loading…
+                  </div>
+                ) : appointments.length === 0 ? (
+                  <div className="db-empty" style={{ padding: 20 }}>
+                    No appointments yet.
+                  </div>
+                ) : (
+                  <table className="db-table">
+                    <thead>
+                      <tr>
+                        <th>Reference</th>
+                        <th>Doctor</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th></th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {appointments.map((a) => (
+                        <tr key={a.id}>
+                          <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
+                          <td>{a.doctorName} <span style={{ color: "var(--ink-soft)" }}>· {a.specialization}</span></td>
+                          <td>{a.date}</td>
+                          <td>{a.time}</td>
+                          <td>
+                            <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
+                          </td>
+                          <td>
+                            {a.status === "CONFIRMED" && (
+                              <button
+                                className="db-btn danger sm"
+                                disabled={cancellingId === a.id}
+                                onClick={() => cancelAppointment(a.id)}
+                              >
+                                {cancellingId === a.id ? "Cancelling…" : "Cancel"}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           )}
@@ -351,40 +501,50 @@ export default function PatientDashboard({ patientName = "Juan Dela Cruz", onLog
                 <div className="db-panel-title">Profile information</div>
               </div>
               <div className="db-panel-body">
-                <div className="db-field">
-                  <label className="db-label">Full name</label>
-                  <input
-                    className="db-input"
-                    value={profile.fullName}
-                    onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
-                  />
-                </div>
-                <div className="db-field">
-                  <label className="db-label">Email</label>
-                  <input
-                    className="db-input"
-                    value={profile.email}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                  />
-                </div>
-                <div className="db-field">
-                  <label className="db-label">Contact number</label>
-                  <input
-                    className="db-input"
-                    value={profile.contact}
-                    onChange={(e) => setProfile({ ...profile, contact: e.target.value })}
-                  />
-                </div>
-                <div className="db-field">
-                  <label className="db-label">Medical history</label>
-                  <textarea
-                    className="db-textarea"
-                    rows={3}
-                    value={profile.medicalHistory}
-                    onChange={(e) => setProfile({ ...profile, medicalHistory: e.target.value })}
-                  />
-                </div>
-                <button className="db-btn primary">Save changes</button>
+                {profileError && <div className="db-error">{profileError}</div>}
+                {profileLoading ? (
+                  <div className="db-empty">Loading…</div>
+                ) : (
+                  <>
+                    <div className="db-field">
+                      <label className="db-label">Full name</label>
+                      <input
+                        className="db-input"
+                        value={profile.fullName}
+                        onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
+                      />
+                    </div>
+                    <div className="db-field">
+                      <label className="db-label">Email</label>
+                      <input className="db-input" value={profile.email} disabled />
+                    </div>
+                    <div className="db-field">
+                      <label className="db-label">Contact number</label>
+                      <input
+                        className="db-input"
+                        value={profile.contact}
+                        onChange={(e) => setProfile({ ...profile, contact: e.target.value })}
+                      />
+                    </div>
+                    <div className="db-field">
+                      <label className="db-label">Medical history</label>
+                      <textarea
+                        className="db-textarea"
+                        rows={3}
+                        value={profile.medicalHistory}
+                        onChange={(e) => setProfile({ ...profile, medicalHistory: e.target.value })}
+                      />
+                    </div>
+                    {saveMessage && (
+                      <div style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 10 }}>
+                        {saveMessage}
+                      </div>
+                    )}
+                    <button className="db-btn primary" disabled={saving} onClick={saveProfile}>
+                      {saving ? "Saving…" : "Save changes"}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}
