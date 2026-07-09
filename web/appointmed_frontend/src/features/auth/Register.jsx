@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import "./Appointmed.css";
+import "../../shared/styles/Appointmed.css";
+import { AuthAPI } from "./api/authApi";
 
 /**
  * AppointMed — Register (patients only, per the SRS business rules:
@@ -8,8 +9,8 @@ import "./Appointmed.css";
  * Maps to SRS:
  *   FR-001  Collect full name, DOB, contact number, email, password
  *   FR-002  Validate all required fields before submit
- *   FR-003  Reject duplicate email — wire the server's 409 response into
- *           errors.email once handleSubmit calls the real API
+ *   FR-003  Reject duplicate email — surfaced via AuthAPI.register's
+ *           thrown error (409 -> { field: "email", message: "..." })
  *
  * Props:
  *   onRegister(values)   — called with form values on valid submit
@@ -33,10 +34,6 @@ function makeReference() {
 function validateEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
-
-// Point this at your Spring Boot server. During development that's
-// usually http://localhost:8080 unless you changed server.port.
-const API_BASE_URL = "http://localhost:8080/api/auth";
 
 export default function Register({ onRegister, onNavigateToLogin }) {
   const [values, setValues] = useState({
@@ -109,37 +106,30 @@ export default function Register({ onRegister, onNavigateToLogin }) {
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        // 409 duplicate email -> { field: "email", message: "..." } (FR-003)
-        // 400 validation error -> { fieldName: "message", ... } straight from Bean Validation
-        if (data.field && data.message) {
-          setErrors((e) => ({ ...e, [data.field]: data.message }));
-        } else {
-          setErrors((e) => ({ ...e, ...data }));
-        }
-        setSubmitting(false);
-        return;
-      }
-
-      localStorage.setItem("am_token", data.token);
-
+      const data = await AuthAPI.register(payload);
       setSubmitting(false);
       alert(`Registration successful! Welcome, ${data.fullName || values.fullName}.`);
       onRegister && onRegister(data);
     } catch (err) {
       setSubmitting(false);
-      setErrors((e) => ({
-        ...e,
-        email: "Can't reach the server. Check that it's running and try again.",
-      }));
+
+      if (err.status === undefined) {
+        setErrors((e) => ({
+          ...e,
+          email: "Can't reach the server. Check that it's running and try again.",
+        }));
+        return;
+      }
+
+      // 409 duplicate email -> { field: "email", message: "..." } (FR-003)
+      // 400 validation error -> { fieldName: "message", ... } straight from Bean Validation
+      if (err.data?.field && err.data?.message) {
+        setErrors((e) => ({ ...e, [err.data.field]: err.data.message }));
+      } else if (err.data && typeof err.data === "object") {
+        setErrors((e) => ({ ...e, ...err.data }));
+      } else {
+        setErrors((e) => ({ ...e, email: err.message || "Something went wrong. Try again." }));
+      }
     }
   }
 

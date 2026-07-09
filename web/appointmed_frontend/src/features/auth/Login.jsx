@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from "react";
-import "./Appointmed.css";
+import "../../shared/styles/Appointmed.css";
+import { AuthAPI } from "./api/authApi";
 
 /**
  * AppointMed — Login (patients, doctors, and admins all sign in here;
  * only patients can self-register, see Register.jsx).
  *
  * Maps to SRS FR-004: authenticate against email + password and issue a
- * JWT. Wire handleSubmit's fetch call to POST /api/auth/login.
+ * JWT. Talks to the backend through AuthAPI.login (see ./api/authApi).
  *
  * Props:
- *   onLogin(values)        — called with { email, password } on valid submit
+ *   onLogin(values)        — called with { id, fullName, email, role, token } on valid submit
  *   onNavigateToRegister() — called when the user taps "Register"
  */
 
@@ -30,10 +31,6 @@ function makeReference() {
 function validateEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
-
-// Point this at your Spring Boot server. During development that's
-// usually http://localhost:8080 unless you changed server.port.
-const API_BASE_URL = "http://localhost:8080/api/auth";
 
 export default function Login({ onLogin, onNavigateToRegister }) {
   const [values, setValues] = useState({ email: "", password: "" });
@@ -82,37 +79,26 @@ export default function Login({ onLogin, onNavigateToRegister }) {
     setSubmitting(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        // Backend sends { field: "password", message: "Incorrect email or password." }
-        // on bad credentials (401), or { field: "...", message: "..." } for validation errors.
-        setErrors((e) => ({
-          ...e,
-          [data.field || "password"]: data.message || "Something went wrong. Try again.",
-        }));
-        setSubmitting(false);
-        return;
-      }
-
-      // Save the JWT so future requests (booking, profile, etc.) can send it
-      // as an Authorization: Bearer <token> header.
-      localStorage.setItem("am_token", data.token);
-
+      const data = await AuthAPI.login(values.email, values.password);
       setSubmitting(false);
       onLogin && onLogin(data);
     } catch (err) {
       setSubmitting(false);
-      setErrors((e) => ({
-        ...e,
-        password: "Can't reach the server. Check that it's running and try again.",
-      }));
+
+      if (err.status === undefined) {
+        // Network-level failure (server unreachable), not a 4xx from the API.
+        setErrors((e) => ({
+          ...e,
+          password: "Can't reach the server. Check that it's running and try again.",
+        }));
+        return;
+      }
+
+      // Backend sends { field: "password", message: "Incorrect email or password." }
+      // on bad credentials (401), or { field: "...", message: "..." } for validation errors.
+      const field = err.data?.field || "password";
+      const message = err.data?.message || "Something went wrong. Try again.";
+      setErrors((e) => ({ ...e, [field]: message }));
     }
   }
 
