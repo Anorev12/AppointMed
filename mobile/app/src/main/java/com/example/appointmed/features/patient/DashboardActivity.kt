@@ -1,16 +1,15 @@
-package com.example.appointmed.activities
-
+package com.example.appointmed.features.patient
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.example.appointmed.R
 import com.example.appointmed.databinding.ActivityDashboardBinding
-import com.example.appointmed.fragments.BookFragment
-import com.example.appointmed.fragments.HistoryFragment
-import com.example.appointmed.fragments.HomeFragment
-import com.example.appointmed.fragments.ProfileFragment
-import com.example.appointmed.utils.TokenManager
-
+import com.example.appointmed.features.patient.fragments.BookFragment
+import com.example.appointmed.features.patient.fragments.HistoryFragment
+import com.example.appointmed.features.patient.fragments.HomeFragment
+import com.example.appointmed.features.patient.fragments.ProfileFragment
+import com.example.appointmed.core.utils.TokenManager
+import com.example.appointmed.features.auth.LoginActivity
 /**
  * Patient Dashboard shell. Hosts four fragments (Home, Book, History,
  * Profile) swapped via the bottom navigation bar — the mobile equivalent

@@ -1,15 +1,13 @@
-package com.example.appointmed.fragments
-
+package com.example.appointmed.features.patient.fragments
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import com.example.appointmed.activities.DashboardActivity
+import com.example.appointmed.features.patient.DashboardActivity
 import com.example.appointmed.databinding.FragmentProfileBinding
-import com.example.appointmed.utils.TokenManager
-
+import com.example.appointmed.core.utils.TokenManager
 class ProfileFragment : Fragment() {
 
     private var _binding: FragmentProfileBinding? = null

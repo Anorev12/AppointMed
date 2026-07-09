@@ -1,8 +1,7 @@
-package com.example.appointmed.repository
-
-import com.example.appointmed.models.Doctor
-import com.example.appointmed.models.Appointment
-import com.example.appointmed.models.TimeSlot
+package com.example.appointmed.features.patient.repository
+import com.example.appointmed.features.patient.models.Doctor
+import com.example.appointmed.features.patient.models.Appointment
+import com.example.appointmed.features.patient.models.TimeSlot
 import kotlin.random.Random
 
 /**

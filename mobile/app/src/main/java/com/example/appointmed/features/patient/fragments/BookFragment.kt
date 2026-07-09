@@ -1,5 +1,4 @@
-package com.example.appointmed.fragments
-
+package com.example.appointmed.features.patient.fragments
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,13 +7,12 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.appointmed.R
-import com.example.appointmed.activities.DashboardActivity
-import com.example.appointmed.adapters.DoctorAdapter
-import com.example.appointmed.adapters.SlotAdapter
+import com.example.appointmed.features.patient.DashboardActivity
+import com.example.appointmed.features.patient.adapters.DoctorAdapter
+import com.example.appointmed.features.patient.adapters.SlotAdapter
 import com.example.appointmed.databinding.FragmentBookBinding
-import com.example.appointmed.repository.AppointmentRepository
-import com.example.appointmed.models.Doctor
-
+import com.example.appointmed.features.patient.repository.AppointmentRepository
+import com.example.appointmed.features.patient.models.Doctor
 class BookFragment : Fragment() {
 
     private var _binding: FragmentBookBinding? = null

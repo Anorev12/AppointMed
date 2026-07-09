@@ -1,17 +1,15 @@
-package com.example.appointmed.fragments
-
+package com.example.appointmed.features.patient.fragments
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.example.appointmed.R
-import com.example.appointmed.activities.DashboardActivity
+import com.example.appointmed.features.patient.DashboardActivity
 import com.example.appointmed.databinding.FragmentHomeBinding
 import com.example.appointmed.databinding.ItemStatCardBinding
-import com.example.appointmed.repository.AppointmentRepository
-import com.example.appointmed.utils.TokenManager
-
+import com.example.appointmed.features.patient.repository.AppointmentRepository
+import com.example.appointmed.core.utils.TokenManager
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null

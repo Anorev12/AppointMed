@@ -1,5 +1,4 @@
-package com.example.appointmed.models
-
+package com.example.appointmed.features.patient.models
 data class Doctor(
     val id: Int,
     val name: String,

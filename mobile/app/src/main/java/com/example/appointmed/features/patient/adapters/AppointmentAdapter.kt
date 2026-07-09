@@ -1,5 +1,4 @@
-package com.example.appointmed.adapters
-
+package com.example.appointmed.features.patient.adapters
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -7,8 +6,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.appointmed.R
 import com.example.appointmed.databinding.ItemAppointmentBinding
-import com.example.appointmed.models.Appointment
-
+import com.example.appointmed.features.patient.models.Appointment
 class AppointmentAdapter(
     private val appointments: List<Appointment>,
     private val onCancel: (Appointment) -> Unit

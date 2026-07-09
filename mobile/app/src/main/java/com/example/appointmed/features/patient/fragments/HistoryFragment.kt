@@ -1,15 +1,13 @@
-package com.example.appointmed.fragments
-
+package com.example.appointmed.features.patient.fragments
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.appointmed.adapters.AppointmentAdapter
+import com.example.appointmed.features.patient.adapters.AppointmentAdapter
 import com.example.appointmed.databinding.FragmentHistoryBinding
-import com.example.appointmed.repository.AppointmentRepository
-
+import com.example.appointmed.features.patient.repository.AppointmentRepository
 class HistoryFragment : Fragment() {
 
     private var _binding: FragmentHistoryBinding? = null

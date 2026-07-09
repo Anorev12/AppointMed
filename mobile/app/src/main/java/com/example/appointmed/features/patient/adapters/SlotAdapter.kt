@@ -1,13 +1,11 @@
-package com.example.appointmed.adapters
-
+package com.example.appointmed.features.patient.adapters
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.appointmed.R
 import com.example.appointmed.databinding.ItemSlotBinding
-import com.example.appointmed.models.TimeSlot
-
+import com.example.appointmed.features.patient.models.TimeSlot
 class SlotAdapter(
     private val slots: List<TimeSlot>,
     private val onSelect: (TimeSlot) -> Unit
