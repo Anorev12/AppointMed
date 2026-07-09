@@ -1,9 +1,14 @@
 import { useState } from "react";
-import "./Appointmed.css";
+import "../../shared/styles/Appointmed.css";
 
 /**
  * AppointMed — Patient Dashboard
  * Covers: FR-006 to FR-013 (browse doctors, book, reschedule/cancel, history)
+ *
+ * NOTE: this slice is still on local mock data end-to-end (booking,
+ * cancellation, profile edits). When the backend endpoints for these land,
+ * add a features/patient/api/patientApi.js alongside this file, following
+ * the same pattern as the doctor and admin slices.
  */
 
 const DOCTORS = [
