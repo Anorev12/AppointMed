@@ -1,5 +1,6 @@
 import { useState } from "react";
-import "./Appointmed.css";
+import "../../shared/styles/Appointmed.css";
+import { AdminAPI } from "./api/adminApi";
 
 /**
  * AppointMed — Admin Dashboard
@@ -25,8 +26,6 @@ const INITIAL_APPOINTMENTS = [
   { id: "APT-102890", patient: "Ana Lim", doctor: "Dr. Tan", date: "2026-07-11", time: "10:00", status: "confirmed" },
   { id: "APT-101877", patient: "Juan Dela Cruz", doctor: "Dr. Cruz", date: "2026-06-30", time: "10:30", status: "cancelled" },
 ];
-
-const API_BASE_URL = "http://localhost:8080/api";
 
 export default function AdminDashboard({ adminName = "Admin", onLogout }) {
   const [view, setView] = useState("overview"); // overview | patients | doctors | appointments
@@ -73,24 +72,7 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
 
     setAddingDoctor(true);
     try {
-      const token = localStorage.getItem("am_token");
-      const res = await fetch(`${API_BASE_URL}/admin/doctors`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(newDoctor),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setAddDoctorError(typeof data === "string" ? data : "Couldn't create doctor account.");
-        setAddingDoctor(false);
-        return;
-      }
-
+      const data = await AdminAPI.createDoctor(newDoctor);
       setDoctors((prev) => [
         ...prev,
         { id: data.id, name: data.fullName, specialization: data.specialization, status: "active" },
@@ -98,7 +80,11 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
       setNewDoctor({ fullName: "", email: "", password: "", specialization: "" });
       setShowAddDoctor(false);
     } catch (err) {
-      setAddDoctorError("Can't reach the server. Check that it's running and try again.");
+      if (err.status === undefined) {
+        setAddDoctorError("Can't reach the server. Check that it's running and try again.");
+      } else {
+        setAddDoctorError(err.data?.message || err.message || "Couldn't create doctor account.");
+      }
     } finally {
       setAddingDoctor(false);
     }
