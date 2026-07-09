@@ -59,4 +59,9 @@ public class DoctorService {
                 .map(Doctor::getFullName)
                 .orElseThrow(() -> new IllegalArgumentException("Doctor not found."));
     }
+
+    /** Used by DoctorController so patients can browse the full roster. */
+    public java.util.List<Doctor> listAll() {
+        return doctorRepository.findAll();
+    }
 }

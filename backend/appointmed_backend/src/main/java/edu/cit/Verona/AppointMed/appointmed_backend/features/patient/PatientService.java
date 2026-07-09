@@ -56,4 +56,41 @@ public class PatientService {
                 .map(Patient::getFullName)
                 .orElseThrow(() -> new IllegalArgumentException("Patient not found."));
     }
+
+    /** Used by PatientProfileController to show the patient's own details. */
+    public edu.cit.Verona.AppointMed.appointmed_backend.features.patient.dto.PatientProfileResponse getProfile(Long id) {
+        Patient patient = patientRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found."));
+        return toProfileResponse(patient);
+    }
+
+    /** Used by PatientProfileController to update name, contact number, and medical history. */
+    public edu.cit.Verona.AppointMed.appointmed_backend.features.patient.dto.PatientProfileResponse updateProfile(
+            Long id, edu.cit.Verona.AppointMed.appointmed_backend.features.patient.dto.PatientProfileUpdateRequest request
+    ) {
+        Patient patient = patientRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found."));
+
+        if (request.getFullName() == null || request.getFullName().isBlank()) {
+            throw new IllegalArgumentException("Full name can't be empty.");
+        }
+
+        patient.setFullName(request.getFullName());
+        patient.setContactNumber(request.getContactNumber());
+        patient.setMedicalHistory(request.getMedicalHistory());
+        patient = patientRepository.save(patient);
+
+        return toProfileResponse(patient);
+    }
+
+    private edu.cit.Verona.AppointMed.appointmed_backend.features.patient.dto.PatientProfileResponse toProfileResponse(Patient patient) {
+        return new edu.cit.Verona.AppointMed.appointmed_backend.features.patient.dto.PatientProfileResponse(
+                patient.getId(),
+                patient.getFullName(),
+                patient.getEmail(),
+                patient.getContactNumber(),
+                patient.getDateOfBirth() != null ? patient.getDateOfBirth().toString() : null,
+                patient.getMedicalHistory()
+        );
+    }
 }
