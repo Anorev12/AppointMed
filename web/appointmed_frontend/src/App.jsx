@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import Login from "./Login";
-import Register from "./Register";
-import PatientDashboard from "./PatientDashboard";
-import DoctorDashboard from "./DoctorDashboard";
-import AdminDashboard from "./AdminDashboard";
-
-const API_BASE_URL = "http://localhost:8080/api/auth";
+import Login from "./features/auth/Login";
+import Register from "./features/auth/Register";
+import PatientDashboard from "./features/patient/PatientDashboard";
+import DoctorDashboard from "./features/doctor/DoctorDashboard";
+import AdminDashboard from "./features/admin/AdminDashboard";
+import { AuthAPI } from "./features/auth/api/authApi";
+import { getToken, clearToken } from "./shared/api/httpClient";
 
 function viewForRole(role) {
   if (role === "DOCTOR") return "doctor";
@@ -18,44 +18,37 @@ function App() {
   const [user, setUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
 
-  // On refresh, re-verify the token against the server (via /api/auth/me)
-  // instead of trusting whatever's cached in localStorage. The old code
-  // just trusted the saved JSON blob directly — someone could edit
-  // localStorage by hand to say "role": "ADMIN" and get in. This way the
-  // role actually comes from the signed token every time.
+  // On refresh, re-verify the token against the server (via AuthAPI.me,
+  // which hits /api/auth/me) instead of trusting whatever's cached in
+  // localStorage — someone editing localStorage by hand to say
+  // "role": "ADMIN" shouldn't get in. The role always comes from the
+  // signed token.
   useEffect(() => {
-    const token = localStorage.getItem("am_token");
+    const token = getToken();
 
     if (!token) {
       setCheckingSession(false);
       return;
     }
 
-    fetch(`${API_BASE_URL}/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Session invalid or expired");
-        return res.json();
-      })
+    AuthAPI.me()
       .then((data) => {
         localStorage.setItem("user", JSON.stringify(data));
         setUser(data);
         setView(viewForRole(data.role));
-        setCheckingSession(false);
       })
       .catch(() => {
         localStorage.removeItem("user");
-        localStorage.removeItem("am_token");
+        clearToken();
         setView("login");
-        setCheckingSession(false);
-      });
+      })
+      .finally(() => setCheckingSession(false));
   }, []);
 
   function handleAuthSuccess(data) {
     // data = { id, fullName, email, role, token } — from Login/Register's
-    // AuthResponse. Login.jsx / Register.jsx already save "am_token"
-    // themselves; this just keeps the display info (name, role) alongside it.
+    // AuthResponse. AuthAPI.login/register already persisted the token;
+    // this just keeps the display info (name, role) alongside it.
     localStorage.setItem("user", JSON.stringify(data));
     setUser(data);
     setView(viewForRole(data.role));
@@ -63,7 +56,7 @@ function App() {
 
   function handleLogout() {
     localStorage.removeItem("user");
-    localStorage.removeItem("am_token");
+    clearToken();
     setUser(null);
     setView("login");
   }
