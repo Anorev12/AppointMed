@@ -1,7 +1,6 @@
-package com.example.appointmed.network
-
+package com.example.appointmed.core.network
 import android.content.Context
-import com.example.appointmed.utils.TokenManager
+import com.example.appointmed.core.utils.TokenManager
 import okhttp3.Interceptor
 import okhttp3.Response
 

@@ -1,5 +1,4 @@
-package com.example.appointmed
-
+package com.example.appointmed.core
 import android.app.Application
 
 /**

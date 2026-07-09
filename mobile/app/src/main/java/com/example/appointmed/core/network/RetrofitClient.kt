@@ -1,12 +1,14 @@
-package com.example.appointmed.network
-
+package com.example.appointmed.core.network
 import android.content.Context
-import com.example.appointmed.api.AuthApiService
+import com.example.appointmed.features.doctor.api.AvailabilityApiService
+import com.example.appointmed.features.auth.api.AuthApiService
+import com.example.appointmed.features.admin.api.AdminApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+
 
 /**
  * Single shared Retrofit instance for the whole app.
@@ -44,5 +46,11 @@ object RetrofitClient {
 
     fun getAuthApi(context: Context): AuthApiService {
         return getInstance(context).create(AuthApiService::class.java)
+    }
+    fun getAvailabilityApi(context: Context): AvailabilityApiService {
+        return getInstance(context).create(AvailabilityApiService::class.java)
+    }
+    fun getAdminApi(context: Context): AdminApiService {
+        return getInstance(context).create(AdminApiService::class.java)
     }
 }

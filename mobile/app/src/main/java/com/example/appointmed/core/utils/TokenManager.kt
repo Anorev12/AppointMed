@@ -1,9 +1,7 @@
-package com.example.appointmed.utils
-
+package com.example.appointmed.core.utils
 import android.content.Context
 import android.content.SharedPreferences
-import com.example.appointmed.models.LoginResponse
-
+import com.example.appointmed.features.auth.models.LoginResponse
 /**
  * Persists the JWT and logged-in user's details locally using
  * SharedPreferences, so the session survives app restarts.
@@ -27,6 +25,7 @@ class TokenManager(context: Context) {
             putString(KEY_EMAIL, response.email)
             putString(KEY_CONTACT_NUMBER, response.contactNumber)
             putString(KEY_DATE_OF_BIRTH, response.dateOfBirth)
+            putString(KEY_SPECIALIZATION, response.specialization)
             putString(KEY_ROLE, response.role)
             apply()
         }
@@ -41,9 +40,14 @@ class TokenManager(context: Context) {
         val id = prefs.getLong(KEY_ID, -1L)
         val fullName = prefs.getString(KEY_FULL_NAME, null) ?: return null
         val email = prefs.getString(KEY_EMAIL, null) ?: return null
-        val contactNumber = prefs.getString(KEY_CONTACT_NUMBER, null) ?: return null
-        val dateOfBirth = prefs.getString(KEY_DATE_OF_BIRTH, null) ?: return null
         val role = prefs.getString(KEY_ROLE, null) ?: return null
+
+        // contactNumber and dateOfBirth are only present for PATIENT accounts —
+        // specialization is only present for DOCTOR accounts. None of these
+        // three should gate the return.
+        val contactNumber = prefs.getString(KEY_CONTACT_NUMBER, null) ?: ""
+        val dateOfBirth = prefs.getString(KEY_DATE_OF_BIRTH, null) ?: ""
+        val specialization = prefs.getString(KEY_SPECIALIZATION, null)
 
         return LoginResponse(
             token = token,
@@ -52,6 +56,7 @@ class TokenManager(context: Context) {
             email = email,
             contactNumber = contactNumber,
             dateOfBirth = dateOfBirth,
+            specialization = specialization,
             role = role
         )
     }
@@ -72,6 +77,7 @@ class TokenManager(context: Context) {
         private const val KEY_EMAIL = "email"
         private const val KEY_CONTACT_NUMBER = "contact_number"
         private const val KEY_DATE_OF_BIRTH = "date_of_birth"
+        private const val KEY_SPECIALIZATION = "specialization"
         private const val KEY_ROLE = "role"
     }
 }
