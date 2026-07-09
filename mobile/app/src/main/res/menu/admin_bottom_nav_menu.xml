@@ -1,0 +1,7 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/nav_overview" android:title="Overview" android:icon="@drawable/ic_home_24" />
+    <item android:id="@+id/nav_admin_appointments" android:title="Appointments" android:icon="@drawable/ic_calendar_24" />
+    <item android:id="@+id/nav_admin_patients" android:title="Patients" android:icon="@drawable/ic_person_24" />
+    <item android:id="@+id/nav_admin_doctors" android:title="Doctors" android:icon="@drawable/ic_person_24" />
+    <item android:id="@+id/nav_admin_profile" android:title="Profile" android:icon="@drawable/ic_person_24" />
+</menu>
