@@ -1,5 +1,4 @@
-package com.example.appointmed.models
-
+package com.example.appointmed.features.auth.models
 /**
  * Request body for POST /api/auth/register.
  * confirmPassword is intentionally NOT included — validated client-side only.

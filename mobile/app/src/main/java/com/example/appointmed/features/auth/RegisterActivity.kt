@@ -1,5 +1,4 @@
-package com.example.appointmed.activities
-
+package com.example.appointmed.features.auth
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
@@ -7,9 +6,10 @@ import android.util.Patterns
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.example.appointmed.databinding.ActivityRegisterBinding
-import com.example.appointmed.models.RegisterRequest
-import com.example.appointmed.network.RetrofitClient
-import com.example.appointmed.utils.TokenManager
+import com.example.appointmed.features.auth.models.RegisterRequest
+import com.example.appointmed.core.network.RetrofitClient
+import com.example.appointmed.core.utils.TokenManager
+import com.example.appointmed.features.patient.DashboardActivity
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

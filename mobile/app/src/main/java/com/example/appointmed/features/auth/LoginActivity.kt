@@ -1,14 +1,16 @@
-package com.example.appointmed.activities
-
+package com.example.appointmed.features.auth
 import android.content.Intent
 import android.os.Bundle
 import android.util.Patterns
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.example.appointmed.databinding.ActivityLoginBinding
-import com.example.appointmed.models.LoginRequest
-import com.example.appointmed.network.RetrofitClient
-import com.example.appointmed.utils.TokenManager
+import com.example.appointmed.features.auth.models.LoginRequest
+import com.example.appointmed.core.network.RetrofitClient
+import com.example.appointmed.core.utils.TokenManager
+import com.example.appointmed.features.admin.AdminDashboardActivity
+import com.example.appointmed.features.doctor.DoctorDashboardActivity
+import com.example.appointmed.features.patient.DashboardActivity
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +22,8 @@ import java.io.IOException
  * Login screen. Mirrors the React Login.jsx handleSubmit logic:
  *   1. Validate email + password client-side.
  *   2. POST /api/auth/login with { email, password }.
- *   3. On success (200): save the token + user info, go to Dashboard.
+ *   3. On success (200): save the token + user info, go to the
+ *      role-appropriate dashboard.
  *   4. On failure (401/400): show the field-specific error message
  *      returned by the backend as { field, message }.
  */
@@ -36,9 +39,10 @@ class LoginActivity : AppCompatActivity() {
 
         tokenManager = TokenManager(this)
 
-        // If already logged in, skip straight to Dashboard
+        // If already logged in, skip straight to the correct dashboard
         if (tokenManager.isLoggedIn()) {
-            goToDashboard()
+            val user = tokenManager.getUser()
+            goToDashboard(user?.role ?: "PATIENT")
             return
         }
 
@@ -94,7 +98,7 @@ class LoginActivity : AppCompatActivity() {
                 if (response.isSuccessful && response.body() != null) {
                     val loginResponse = response.body()!!
                     tokenManager.saveSession(loginResponse)
-                    goToDashboard()
+                    goToDashboard(loginResponse.role)
                 } else {
                     handleErrorResponse(response.errorBody()?.string())
                 }
@@ -151,8 +155,13 @@ class LoginActivity : AppCompatActivity() {
         binding.btnLogin.text = if (loading) "Logging in…" else "Log in"
     }
 
-    private fun goToDashboard() {
-        startActivity(Intent(this, DashboardActivity::class.java))
+    private fun goToDashboard(role: String) {
+        val intent = when (role) {
+            "DOCTOR" -> Intent(this, DoctorDashboardActivity::class.java)
+            "ADMIN" -> Intent(this, AdminDashboardActivity::class.java)
+            else -> Intent(this, DashboardActivity::class.java)
+        }
+        startActivity(intent)
         finish()
     }
 }

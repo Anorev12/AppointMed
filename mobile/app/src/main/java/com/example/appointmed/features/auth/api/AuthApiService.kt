@@ -1,8 +1,7 @@
-package com.example.appointmed.api
-
-import com.example.appointmed.models.LoginRequest
-import com.example.appointmed.models.LoginResponse
-import com.example.appointmed.models.RegisterRequest
+package com.example.appointmed.features.auth.api
+import com.example.appointmed.features.auth.models.LoginRequest
+import com.example.appointmed.features.auth.models.LoginResponse
+import com.example.appointmed.features.auth.models.RegisterRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
