@@ -826,6 +826,77 @@
   margin-bottom:6px;
 }
 
+/* ---------- Search / filter row (appointment history) ---------- */
+.db-filter-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  padding:14px 20px 0;
+}
+
+.db-filter-btn{
+  font-family:var(--font-body);
+  font-size:12.5px;
+  padding:7px 14px;
+  border:1px solid var(--line);
+  border-radius:20px;
+  background:var(--paper-raised);
+  color:var(--ink);
+  cursor:pointer;
+}
+
+.db-filter-btn:hover{ border-color:var(--stamp); }
+.db-filter-btn.is-active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+
+.db-search-row{
+  padding:16px 20px 0;
+}
+
+.db-search-row .db-input{ max-width:360px; }
+
+/* ---------- Modal (reschedule dialog) ---------- */
+.db-modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(26,43,76,.45);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:100;
+  padding:20px;
+}
+
+.db-modal{
+  background:var(--paper-raised);
+  border-radius:10px;
+  width:100%;
+  max-width:460px;
+  max-height:88vh;
+  overflow-y:auto;
+  padding:24px;
+}
+
+.db-modal-title{
+  font-family:var(--font-display);
+  font-size:18px;
+  font-weight:700;
+  color:var(--ink);
+  margin-bottom:4px;
+}
+
+.db-modal-sub{
+  font-size:13px;
+  color:var(--ink-soft);
+  margin-bottom:18px;
+}
+
+.db-modal-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:18px;
+}
+
 @media (max-width: 860px){
   .db-sidebar{ display:none; }
   .db-topbar, .db-content{ padding-left:20px; padding-right:20px; }

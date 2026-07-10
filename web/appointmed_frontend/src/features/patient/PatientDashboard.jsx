@@ -34,6 +34,10 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
   const [apptsError, setApptsError] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
 
+  // ---- Appointment history search/filter (FR-012) ----
+  const [historyKeyword, setHistoryKeyword] = useState("");
+  const [historyStatus, setHistoryStatus] = useState(""); // "" = All
+
   // ---- Booking flow ----
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedDate, setSelectedDate] = useState(todayStr());
@@ -44,6 +48,16 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
   const [booking, setBooking] = useState(false);
   const [bookError, setBookError] = useState("");
   const [confirmedAppt, setConfirmedAppt] = useState(null);
+
+  // ---- Reschedule flow (FR-011) ----
+  const [reschedulingAppt, setReschedulingAppt] = useState(null); // the appointment being moved, or null
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleSlots, setRescheduleSlots] = useState([]);
+  const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false);
+  const [rescheduleSlotsError, setRescheduleSlotsError] = useState("");
+  const [rescheduleSlot, setRescheduleSlot] = useState(null);
+  const [rescheduleSaving, setRescheduleSaving] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState("");
 
   // ---- Profile ----
   const [profile, setProfile] = useState({
@@ -62,6 +76,7 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
     loadDoctors();
     loadAppointments();
     loadProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadDoctors() {
@@ -77,17 +92,31 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
     }
   }
 
-  async function loadAppointments() {
+  /** FR-012: re-issues the list call with whatever search/filter state is current. */
+  async function loadAppointments(overrides = {}) {
     setApptsLoading(true);
     setApptsError("");
     try {
-      const data = await AppointmentsAPI.list();
+      const data = await AppointmentsAPI.list({
+        status: overrides.status !== undefined ? overrides.status : historyStatus,
+        keyword: overrides.keyword !== undefined ? overrides.keyword : historyKeyword,
+      });
       setAppointments(data || []);
     } catch (err) {
       setApptsError(err.message || "Couldn't load your appointments.");
     } finally {
       setApptsLoading(false);
     }
+  }
+
+  function applyStatusFilter(status) {
+    setHistoryStatus(status);
+    loadAppointments({ status });
+  }
+
+  function submitSearch(e) {
+    e.preventDefault();
+    loadAppointments({ keyword: historyKeyword });
   }
 
   async function loadProfile() {
@@ -176,6 +205,57 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
     }
   }
 
+  /** FR-011: opens the reschedule modal for a given appointment, preloaded to its current date. */
+  function openReschedule(appt) {
+    setReschedulingAppt(appt);
+    setRescheduleDate(appt.date);
+    setRescheduleSlot(null);
+    setRescheduleError("");
+    loadRescheduleSlots(appt.doctorId, appt.date);
+  }
+
+  function closeReschedule() {
+    setReschedulingAppt(null);
+    setRescheduleSlots([]);
+    setRescheduleSlot(null);
+    setRescheduleError("");
+  }
+
+  async function loadRescheduleSlots(doctorId, date) {
+    setRescheduleSlotsLoading(true);
+    setRescheduleSlotsError("");
+    setRescheduleSlots([]);
+    setRescheduleSlot(null);
+    try {
+      const data = await DoctorsAPI.getSlots(doctorId, date);
+      setRescheduleSlots(data || []);
+    } catch (err) {
+      setRescheduleSlotsError(err.message || "Couldn't load open slots for that day.");
+    } finally {
+      setRescheduleSlotsLoading(false);
+    }
+  }
+
+  function changeRescheduleDate(date) {
+    setRescheduleDate(date);
+    if (reschedulingAppt) loadRescheduleSlots(reschedulingAppt.doctorId, date);
+  }
+
+  async function confirmReschedule() {
+    if (!reschedulingAppt || !rescheduleSlot) return;
+    setRescheduleSaving(true);
+    setRescheduleError("");
+    try {
+      const updated = await AppointmentsAPI.reschedule(reschedulingAppt.id, rescheduleDate, rescheduleSlot);
+      setAppointments((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+      closeReschedule();
+    } catch (err) {
+      setRescheduleError(err.message || "Couldn't reschedule that appointment.");
+    } finally {
+      setRescheduleSaving(false);
+    }
+  }
+
   async function saveProfile() {
     setSaving(true);
     setSaveMessage("");
@@ -195,7 +275,16 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
     }
   }
 
-  const upcoming = appointments.filter((a) => a.status === "CONFIRMED");
+  // Feature 1: "next appointment" must be the nearest upcoming CONFIRMED
+  // appointment by schedule date/time — never by booking/creation order or
+  // appointment id. Cancelled and completed appointments are excluded, and
+  // so is anything whose date has already passed.
+  const todayIso = todayStr();
+  const upcomingSorted = appointments
+    .filter((a) => a.status === "CONFIRMED" && a.date >= todayIso)
+    .slice()
+    .sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date)));
+  const nextAppointment = upcomingSorted[0] || null;
   const selectedDoctorObj = doctors.find((d) => d.id === selectedDoctor);
 
   return (
@@ -273,7 +362,7 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
             <>
               <div className="db-stats-grid">
                 <div className="db-stat-card">
-                  <div className="db-stat-value">{apptsLoading ? "…" : upcoming.length}</div>
+                  <div className="db-stat-value">{apptsLoading ? "…" : upcomingSorted.length}</div>
                   <div className="db-stat-label">Upcoming appointments</div>
                 </div>
                 <div className="db-stat-card">
@@ -297,22 +386,20 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                   {apptsError && <div className="db-error">{apptsError}</div>}
                   {apptsLoading ? (
                     <div className="db-empty">Loading…</div>
-                  ) : upcoming.length === 0 ? (
-                    <div className="db-empty">No upcoming appointments yet.</div>
+                  ) : !nextAppointment ? (
+                    <div className="db-empty">You have no upcoming appointments.</div>
                   ) : (
-                    upcoming.slice(0, 1).map((a) => (
-                      <div className="db-row" key={a.id}>
-                        <div className="db-row-time">{a.time}</div>
-                        <div className="db-row-avatar">
-                          {a.doctorName?.split(" ")[1]?.[0] || "D"}
-                        </div>
-                        <div className="db-row-main">
-                          <div className="db-row-title">{a.doctorName} · {a.specialization}</div>
-                          <div className="db-row-sub">{a.date} · Ref {a.reference}</div>
-                        </div>
-                        <span className="db-badge confirmed">Confirmed</span>
+                    <div className="db-row" key={nextAppointment.id}>
+                      <div className="db-row-time">{nextAppointment.time}</div>
+                      <div className="db-row-avatar">
+                        {nextAppointment.doctorName?.split(" ")[1]?.[0] || "D"}
                       </div>
-                    ))
+                      <div className="db-row-main">
+                        <div className="db-row-title">{nextAppointment.doctorName} · {nextAppointment.specialization}</div>
+                        <div className="db-row-sub">{nextAppointment.date} · Ref {nextAppointment.reference}</div>
+                      </div>
+                      <span className="db-badge confirmed">Confirmed</span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -438,6 +525,35 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
               <div className="db-panel-head">
                 <div className="db-panel-title">Appointment history</div>
               </div>
+
+              {/* FR-012: searchable history — free-text keyword + status filter, both sent to the backend */}
+              <form className="db-search-row" onSubmit={submitSearch}>
+                <input
+                  type="text"
+                  className="db-input"
+                  placeholder="Search by doctor, specialization, or reference no."
+                  value={historyKeyword}
+                  onChange={(e) => setHistoryKeyword(e.target.value)}
+                />
+              </form>
+              <div className="db-filter-row">
+                {[
+                  { label: "All", value: "" },
+                  { label: "Confirmed", value: "CONFIRMED" },
+                  { label: "Cancelled", value: "CANCELLED" },
+                  { label: "Completed", value: "COMPLETED" },
+                ].map((f) => (
+                  <button
+                    key={f.value}
+                    type="button"
+                    className={`db-filter-btn${historyStatus === f.value ? " is-active" : ""}`}
+                    onClick={() => applyStatusFilter(f.value)}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="db-panel-body no-pad">
                 {apptsError && (
                   <div className="db-error" style={{ padding: "12px 20px" }}>
@@ -450,7 +566,7 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                   </div>
                 ) : appointments.length === 0 ? (
                   <div className="db-empty" style={{ padding: 20 }}>
-                    No appointments yet.
+                    {historyStatus || historyKeyword ? "No appointments match your search." : "No appointments yet."}
                   </div>
                 ) : (
                   <table className="db-table">
@@ -474,15 +590,24 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                           <td>
                             <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
                           </td>
-                          <td>
+                          <td style={{ whiteSpace: "nowrap" }}>
                             {a.status === "CONFIRMED" && (
-                              <button
-                                className="db-btn danger sm"
-                                disabled={cancellingId === a.id}
-                                onClick={() => cancelAppointment(a.id)}
-                              >
-                                {cancellingId === a.id ? "Cancelling…" : "Cancel"}
-                              </button>
+                              <>
+                                <button
+                                  className="db-btn outline sm"
+                                  style={{ marginRight: 6 }}
+                                  onClick={() => openReschedule(a)}
+                                >
+                                  Reschedule
+                                </button>
+                                <button
+                                  className="db-btn danger sm"
+                                  disabled={cancellingId === a.id}
+                                  onClick={() => cancelAppointment(a.id)}
+                                >
+                                  {cancellingId === a.id ? "Cancelling…" : "Cancel"}
+                                </button>
+                              </>
                             )}
                           </td>
                         </tr>
@@ -550,6 +675,77 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
           )}
         </div>
       </div>
+
+      {/* ---------- RESCHEDULE MODAL (FR-011) ---------- */}
+      {reschedulingAppt && (
+        <div className="db-modal-overlay" onClick={closeReschedule}>
+          <div className="db-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="db-modal-title">Reschedule appointment</div>
+            <div className="db-modal-sub">
+              Currently: {reschedulingAppt.doctorName} · {reschedulingAppt.date} · {reschedulingAppt.time}
+            </div>
+
+            <div className="db-field">
+              <label className="db-label">New date</label>
+              <input
+                type="date"
+                className="db-input"
+                value={rescheduleDate}
+                min={todayStr()}
+                onChange={(e) => changeRescheduleDate(e.target.value)}
+              />
+            </div>
+
+            <div className="db-label" style={{ margin: "14px 0 10px" }}>
+              New time
+            </div>
+            {rescheduleSlotsError && <div className="db-error">{rescheduleSlotsError}</div>}
+            {rescheduleSlotsLoading ? (
+              <div className="db-empty">Loading slots…</div>
+            ) : rescheduleSlots.length === 0 ? (
+              !rescheduleSlotsError && (
+                <div className="db-empty">
+                  This doctor has no open hours on that day. Try another date.
+                </div>
+              )
+            ) : (
+              <div className="db-slot-grid">
+                {rescheduleSlots.map((slot) => (
+                  <button
+                    key={slot.time}
+                    disabled={slot.reserved}
+                    className={`db-slot-btn${slot.reserved ? " is-reserved" : ""}${
+                      rescheduleSlot === slot.time ? " is-selected" : ""
+                    }`}
+                    onClick={() => setRescheduleSlot(slot.time)}
+                  >
+                    {slot.time}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {rescheduleError && (
+              <div className="db-error" style={{ marginTop: 14 }}>
+                {rescheduleError}
+              </div>
+            )}
+
+            <div className="db-modal-actions">
+              <button className="db-btn outline" onClick={closeReschedule}>
+                Close
+              </button>
+              <button
+                className="db-btn primary"
+                disabled={!rescheduleSlot || rescheduleSaving}
+                onClick={confirmReschedule}
+              >
+                {rescheduleSaving ? "Moving…" : "Confirm move"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

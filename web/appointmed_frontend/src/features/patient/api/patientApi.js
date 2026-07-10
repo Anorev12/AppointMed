@@ -12,7 +12,16 @@ export const DoctorsAPI = {
 };
 
 export const AppointmentsAPI = {
-  list: () => apiFetch("/patient/appointments"),
+  /** FR-012: status/keyword/from/to are all optional server-side search filters. */
+  list: ({ status, keyword, from, to } = {}) => {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    if (keyword) params.set("keyword", keyword);
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    const qs = params.toString();
+    return apiFetch(`/patient/appointments${qs ? `?${qs}` : ""}`);
+  },
 
   book: (doctorId, date, time) =>
     apiFetch("/patient/appointments", {
@@ -23,6 +32,13 @@ export const AppointmentsAPI = {
   cancel: (id) =>
     apiFetch(`/patient/appointments/${id}/cancel`, {
       method: "PUT",
+    }),
+
+  /** FR-011: move a confirmed appointment to a new date/time with the same doctor. */
+  reschedule: (id, date, time) =>
+    apiFetch(`/patient/appointments/${id}/reschedule`, {
+      method: "PUT",
+      body: JSON.stringify({ date, time }),
     }),
 };
 
