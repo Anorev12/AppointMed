@@ -73,7 +73,7 @@
                 android:id="@+id/btnConfirmApt"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Confirm"
+                android:text="Complete"
                 android:textAllCaps="false"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:textColor="@color/stamp" />
@@ -83,7 +83,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="Decline"
+                android:text="Cancel"
                 android:textAllCaps="false"
                 style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:textColor="@color/danger" />

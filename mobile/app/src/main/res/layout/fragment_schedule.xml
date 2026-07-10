@@ -1,58 +1,86 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/paper"
     android:orientation="vertical"
     android:padding="20dp">
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/tvScheduleLoading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Loading your appointments…"
+        android:textColor="@color/ink_soft"
+        android:textSize="13.5sp" />
+
+    <TextView
+        android:id="@+id/tvScheduleError"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:weightSum="3"
-        android:layout_marginBottom="16dp">
-
-        <include layout="@layout/item_stat_card" android:id="@+id/statToday"
-            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:layout_marginEnd="8dp" />
-        <include layout="@layout/item_stat_card" android:id="@+id/statPending"
-            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:layout_marginEnd="8dp" />
-        <include layout="@layout/item_stat_card" android:id="@+id/statTotalMonth"
-            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
-    </LinearLayout>
+        android:textColor="@color/danger"
+        android:textSize="13.5sp"
+        android:visibility="gone"
+        tools:text="Can't reach the server. Check that it's running and try again." />
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
-
-        <Button
-            android:id="@+id/btnFilterAll"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="All"
-            android:textAllCaps="false"
-            android:backgroundTint="@color/stamp"
-            android:textColor="#FFFFFF" />
-
-        <Button
-            android:id="@+id/btnFilterToday"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Today"
-            android:textAllCaps="false"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:textColor="@color/stamp" />
-    </LinearLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvSchedule"
+        android:id="@+id/scheduleContent"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="3"
+            android:layout_marginBottom="16dp">
+
+            <include layout="@layout/item_stat_card" android:id="@+id/statToday"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:layout_marginEnd="8dp" />
+            <include layout="@layout/item_stat_card" android:id="@+id/statConfirmed"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:layout_marginEnd="8dp" />
+            <include layout="@layout/item_stat_card" android:id="@+id/statTotalMonth"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <Button
+                android:id="@+id/btnFilterAll"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="All"
+                android:textAllCaps="false"
+                android:backgroundTint="@color/stamp"
+                android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/btnFilterToday"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Today"
+                android:textAllCaps="false"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:textColor="@color/stamp" />
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvSchedule"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+    </LinearLayout>
 
 </LinearLayout>

@@ -9,8 +9,8 @@ import com.example.appointmed.databinding.ItemScheduleAppointmentBinding
 import com.example.appointmed.features.doctor.models.DoctorAppointment
 class ScheduleAdapter(
     private val appointments: List<DoctorAppointment>,
-    private val onConfirm: (DoctorAppointment) -> Unit,
-    private val onDecline: (DoctorAppointment) -> Unit
+    private val onComplete: (DoctorAppointment) -> Unit,
+    private val onCancel: (DoctorAppointment) -> Unit
 ) : RecyclerView.Adapter<ScheduleAdapter.ScheduleViewHolder>() {
 
     inner class ScheduleViewHolder(val binding: ItemScheduleAppointmentBinding) :
@@ -30,18 +30,21 @@ class ScheduleAdapter(
         holder.binding.tvScheduleRef.text = apt.id
         holder.binding.tvScheduleStatus.text = apt.status.replaceFirstChar { it.uppercase() }
 
-        val (bgColor, textColor) = when (apt.status) {
-            "confirmed" -> R.color.success_soft to R.color.success
-            "pending" -> R.color.border to R.color.ink_soft
-            else -> R.color.danger_soft to R.color.danger
+        val isConfirmed = apt.status == "confirmed"
+        val isCancelled = apt.status == "cancelled"
+
+        val (bgColor, textColor) = when {
+            isConfirmed -> R.color.success_soft to R.color.success
+            isCancelled -> R.color.danger_soft to R.color.danger
+            else -> R.color.border to R.color.ink_soft // "completed"
         }
         holder.binding.tvScheduleStatus.setBackgroundColor(ContextCompat.getColor(context, bgColor))
         holder.binding.tvScheduleStatus.setTextColor(ContextCompat.getColor(context, textColor))
 
-        val isPending = apt.status == "pending"
-        holder.binding.pendingActions.visibility = if (isPending) View.VISIBLE else View.GONE
-        holder.binding.btnConfirmApt.setOnClickListener { onConfirm(apt) }
-        holder.binding.btnDeclineApt.setOnClickListener { onDecline(apt) }
+        // Only a still-confirmed appointment can be closed out or cancelled by the doctor.
+        holder.binding.pendingActions.visibility = if (isConfirmed) View.VISIBLE else View.GONE
+        holder.binding.btnConfirmApt.setOnClickListener { onComplete(apt) }
+        holder.binding.btnDeclineApt.setOnClickListener { onCancel(apt) }
     }
 
     override fun getItemCount() = appointments.size
