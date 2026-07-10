@@ -1,6 +1,7 @@
 package edu.cit.Verona.AppointMed.appointmed_backend.features.appointment;
 
 import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.dto.AppointmentBookRequest;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.dto.AppointmentRescheduleRequest;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.dto.AppointmentResponse;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.dto.SlotResponse;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.entity.Appointment;
@@ -11,10 +12,12 @@ import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.entity.Docto
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.repository.DoctorRepository;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.entity.Patient;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.repository.PatientRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
@@ -42,6 +45,16 @@ public class AppointmentService {
     private final AvailabilityService availabilityService;
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
+
+    /**
+     * Business rule: "Patients may reschedule or cancel an appointment only
+     * before the cutoff period configured by the clinic administrator."
+     * There's no admin UI for this yet, so it's a single application-wide
+     * value read from application.properties (defaults to 2 hours), rather
+     * than a per-doctor/per-clinic DB setting.
+     */
+    @Value("${appointment.cutoff-hours:2}")
+    private int cutoffHours;
 
     public AppointmentService(AppointmentRepository appointmentRepository,
                                AvailabilityService availabilityService,
@@ -88,11 +101,37 @@ public class AppointmentService {
         return toResponse(appointment);
     }
 
-    public List<AppointmentResponse> listForPatient(Long patientId) {
-        return appointmentRepository.findByPatientIdOrderByDateDescTimeDesc(patientId)
-                .stream()
+    /**
+     * FR-012: "maintain and display a complete, searchable appointment
+     * history". status/keyword/from/to are all optional — when every
+     * parameter is null this behaves exactly like the old unfiltered list.
+     *
+     * @param status  optional exact status match ("CONFIRMED" | "CANCELLED" | "COMPLETED"), case-insensitive
+     * @param keyword optional free-text match against doctor name, specialization, or reference number
+     * @param from    optional inclusive lower bound on appointment date (yyyy-MM-dd)
+     * @param to      optional inclusive upper bound on appointment date (yyyy-MM-dd)
+     */
+    public List<AppointmentResponse> listForPatient(Long patientId, String status, String keyword, String from, String to) {
+        List<Appointment> appointments = appointmentRepository.findByPatientIdOrderByDateDescTimeDesc(patientId);
+
+        LocalDate fromDate = (from == null || from.isBlank()) ? null : parseDate(from);
+        LocalDate toDate = (to == null || to.isBlank()) ? null : parseDate(to);
+        String needle = (keyword == null || keyword.isBlank()) ? null : keyword.trim().toLowerCase(Locale.ROOT);
+
+        return appointments.stream()
+                .filter(a -> status == null || status.isBlank() || a.getStatus().equalsIgnoreCase(status.trim()))
+                .filter(a -> fromDate == null || !a.getDate().isBefore(fromDate))
+                .filter(a -> toDate == null || !a.getDate().isAfter(toDate))
+                .filter(a -> needle == null
+                        || a.getDoctorName().toLowerCase(Locale.ROOT).contains(needle)
+                        || (a.getSpecialization() != null && a.getSpecialization().toLowerCase(Locale.ROOT).contains(needle))
+                        || a.getReference().toLowerCase(Locale.ROOT).contains(needle))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    public List<AppointmentResponse> listForPatient(Long patientId) {
+        return listForPatient(patientId, null, null, null, null);
     }
 
     public List<AppointmentResponse> listForDoctor(Long doctorId) {
@@ -113,10 +152,61 @@ public class AppointmentService {
         if ("CANCELLED".equals(appointment.getStatus())) {
             throw new IllegalArgumentException("This appointment is already cancelled.");
         }
+        if ("COMPLETED".equals(appointment.getStatus())) {
+            throw new IllegalArgumentException("A completed appointment can't be cancelled.");
+        }
+        requireBeforeCutoff(appointment);
 
         appointment.setStatus("CANCELLED");
         appointment = appointmentRepository.save(appointment);
         return toResponse(appointment);
+    }
+
+    /**
+     * FR-011: lets a patient move a confirmed appointment to a new date/time
+     * with the same doctor. Re-runs the same slot validation booking uses
+     * (working hours, unavailable dates, double-booking) against the new
+     * slot, and enforces the same cancellation-cutoff business rule against
+     * the *current* slot before allowing the move.
+     */
+    @Transactional
+    public AppointmentResponse reschedule(Long patientId, Long appointmentId, AppointmentRescheduleRequest request) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Appointment not found."));
+
+        if (!appointment.getPatientId().equals(patientId)) {
+            throw new SecurityException("This appointment doesn't belong to you.");
+        }
+        if (!"CONFIRMED".equals(appointment.getStatus())) {
+            throw new IllegalArgumentException("Only a confirmed appointment can be rescheduled.");
+        }
+        requireBeforeCutoff(appointment);
+
+        LocalDate newDate = parseDate(request.getDate());
+        LocalTime newTime = parseTime(request.getTime());
+
+        if (newDate.equals(appointment.getDate()) && newTime.equals(appointment.getTime())) {
+            throw new IllegalArgumentException("That's already your current appointment time.");
+        }
+
+        validateSlot(appointment.getDoctorId(), newDate, newTime);
+
+        appointment.setDate(newDate);
+        appointment.setTime(newTime);
+        // Reference number and status are preserved — this is the same booking, just moved.
+        appointment = appointmentRepository.save(appointment);
+        return toResponse(appointment);
+    }
+
+    /** Business rule: no cancel/reschedule once we're inside the configured cutoff window. */
+    private void requireBeforeCutoff(Appointment appointment) {
+        LocalDateTime appointmentStart = LocalDateTime.of(appointment.getDate(), appointment.getTime());
+        LocalDateTime cutoff = appointmentStart.minusHours(cutoffHours);
+        if (LocalDateTime.now().isAfter(cutoff)) {
+            throw new IllegalArgumentException(
+                    "This appointment can no longer be changed — it's within the " + cutoffHours
+                            + "-hour cutoff period. Please contact the clinic directly.");
+        }
     }
 
     /** Doctor-initiated cancellation — e.g. the doctor can't make that slot after all. */
