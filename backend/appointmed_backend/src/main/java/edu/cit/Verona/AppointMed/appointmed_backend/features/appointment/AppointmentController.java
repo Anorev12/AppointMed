@@ -2,12 +2,13 @@ package edu.cit.Verona.AppointMed.appointmed_backend.features.appointment;
 
 import edu.cit.Verona.AppointMed.appointmed_backend.Security.JwtUtil;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.dto.AppointmentBookRequest;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.dto.AppointmentRescheduleRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Patient-only endpoints for booking, viewing, and cancelling their own
- * appointments. Follows the same manual bearer-token pattern as
+ * Patient-only endpoints for booking, viewing, rescheduling, and cancelling
+ * their own appointments. Follows the same manual bearer-token pattern as
  * AvailabilityController — every endpoint re-validates the token and role
  * itself since there's no Spring Security filter chain in this app.
  */
@@ -39,11 +40,21 @@ public class AppointmentController {
         }
     }
 
+    /**
+     * FR-012: searchable appointment history. All query params are optional;
+     * calling this with none of them behaves like the plain "list everything" call.
+     */
     @GetMapping
-    public ResponseEntity<?> list(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+    public ResponseEntity<?> list(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to
+    ) {
         try {
             Long patientId = requirePatient(authHeader);
-            return ResponseEntity.ok(appointmentService.listForPatient(patientId));
+            return ResponseEntity.ok(appointmentService.listForPatient(patientId, status, keyword, from, to));
         } catch (SecurityException e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }
@@ -57,6 +68,23 @@ public class AppointmentController {
         try {
             Long patientId = requirePatient(authHeader);
             return ResponseEntity.ok(appointmentService.cancel(patientId, id));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(401).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /** FR-011: reschedule a confirmed appointment to a new date/time with the same doctor. */
+    @PutMapping("/{id}/reschedule")
+    public ResponseEntity<?> reschedule(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable Long id,
+            @RequestBody AppointmentRescheduleRequest request
+    ) {
+        try {
+            Long patientId = requirePatient(authHeader);
+            return ResponseEntity.ok(appointmentService.reschedule(patientId, id, request));
         } catch (SecurityException e) {
             return ResponseEntity.status(401).body(e.getMessage());
         } catch (IllegalArgumentException e) {
