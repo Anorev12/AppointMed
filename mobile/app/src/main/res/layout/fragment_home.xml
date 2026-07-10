@@ -14,113 +14,141 @@
         android:padding="20dp">
 
         <TextView
-            android:id="@+id/tvWelcome"
+            android:id="@+id/tvHomeLoading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Welcome back"
-            android:textColor="@color/ink"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="24dp"
+            android:text="Loading…"
+            android:textColor="@color/ink_soft"
+            android:visibility="gone" />
 
         <TextView
+            android:id="@+id/tvHomeError"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:layout_marginBottom="18dp"
-            android:text="Here's what's coming up."
-            android:textColor="@color/ink_soft"
-            android:textSize="13.5sp" />
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="24dp"
+            android:textColor="@color/danger"
+            android:visibility="gone"
+            tools:text="Couldn't load your dashboard." />
 
-        <!-- Stats row -->
         <LinearLayout
+            android:id="@+id/homeContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="3">
+            android:orientation="vertical"
+            android:visibility="gone">
 
-            <include layout="@layout/item_stat_card" android:id="@+id/statUpcoming"
-                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:layout_marginEnd="8dp" />
-            <include layout="@layout/item_stat_card" android:id="@+id/statTotal"
-                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:layout_marginEnd="8dp" />
-            <include layout="@layout/item_stat_card" android:id="@+id/statDoctors"
-                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
-        </LinearLayout>
+            <TextView
+                android:id="@+id/tvWelcome"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Welcome back"
+                android:textColor="@color/ink"
+                android:textSize="22sp"
+                android:textStyle="bold" />
 
-        <!-- Next appointment panel -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="@color/paper_card">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="18dp"
+                android:text="Here's what's coming up."
+                android:textColor="@color/ink_soft"
+                android:textSize="13.5sp" />
 
+            <!-- Stats row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="horizontal"
+                android:weightSum="3">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Next appointment"
-                    android:textColor="@color/ink"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
+                <include layout="@layout/item_stat_card" android:id="@+id/statUpcoming"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:layout_marginEnd="8dp" />
+                <include layout="@layout/item_stat_card" android:id="@+id/statTotal"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:layout_marginEnd="8dp" />
+                <include layout="@layout/item_stat_card" android:id="@+id/statDoctors"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+            </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvEmptyAppointment"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="No upcoming appointments yet."
-                    android:textColor="@color/ink_soft"
-                    android:textSize="13.5sp"
-                    android:visibility="gone" />
+            <!-- Next appointment panel -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/paper_card">
 
                 <LinearLayout
-                    android:id="@+id/nextAppointmentRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
                     android:orientation="vertical"
-                    android:visibility="gone">
+                    android:padding="16dp">
 
                     <TextView
-                        android:id="@+id/tvNextDoctor"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:text="Next appointment"
                         android:textColor="@color/ink"
-                        android:textSize="14.5sp"
-                        android:textStyle="bold"
-                        tools:text="Dr. Reyes · Pediatrics" />
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/tvNextDateTime"
+                        android:id="@+id/tvEmptyAppointment"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="12dp"
+                        android:text="No upcoming appointments yet."
                         android:textColor="@color/ink_soft"
-                        android:textSize="12.5sp"
-                        tools:text="2026-07-10 · 09:00 · Ref APT-102938" />
+                        android:textSize="13.5sp"
+                        android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/nextAppointmentRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/tvNextDoctor"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/ink"
+                            android:textSize="14.5sp"
+                            android:textStyle="bold"
+                            tools:text="Dr. Reyes · Pediatrics" />
+
+                        <TextView
+                            android:id="@+id/tvNextDateTime"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:textColor="@color/ink_soft"
+                            android:textSize="12.5sp"
+                            tools:text="2026-07-10 · 09:00 · Ref APT-102938" />
+
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/btnBookAnother"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:text="Book another"
+                        app:strokeColor="@color/stamp"
+                        android:textColor="@color/stamp" />
 
                 </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
-                <Button
-                    android:id="@+id/btnBookAnother"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:text="Book another"
-                    app:strokeColor="@color/stamp"
-                    android:textColor="@color/stamp" />
-
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

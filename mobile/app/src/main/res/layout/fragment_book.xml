@@ -21,11 +21,45 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
+        <TextView
+            android:id="@+id/tvDoctorsLoading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Loading doctors…"
+            android:textColor="@color/ink_soft"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvDoctorsError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textColor="@color/danger"
+            android:visibility="gone"
+            tools:text="Couldn't load the list of doctors." />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvDoctors"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp" />
+
+        <!-- Date field, only shown once a doctor is selected -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/dateFieldWrapper"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:hint="Appointment date"
+            android:visibility="gone">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etAppointmentDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:cursorVisible="false" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
             android:id="@+id/tvSlotsLabel"
@@ -37,6 +71,24 @@
             android:textSize="15sp"
             android:textStyle="bold"
             android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvSlotsLoading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Loading slots…"
+            android:textColor="@color/ink_soft"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvSlotsError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textColor="@color/danger"
+            android:visibility="gone"
+            tools:text="This doctor has no open hours on that day. Try another date." />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvSlots"
@@ -85,6 +137,15 @@
                     android:enabled="false"
                     android:backgroundTint="@color/stamp"
                     android:textColor="#FFFFFF" />
+
+                <TextView
+                    android:id="@+id/tvBookError"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/danger"
+                    android:visibility="gone"
+                    tools:text="Couldn't book that appointment. It may have just been taken — try another slot." />
 
                 <LinearLayout
                     android:id="@+id/confirmedTicket"

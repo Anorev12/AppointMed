@@ -11,7 +11,7 @@ class DoctorAdapter(
     private val onSelect: (Doctor) -> Unit
 ) : RecyclerView.Adapter<DoctorAdapter.DoctorViewHolder>() {
 
-    private var selectedId: Int? = null
+    private var selectedId: Long? = null
 
     inner class DoctorViewHolder(val binding: ItemDoctorCardBinding) :
         RecyclerView.ViewHolder(binding.root)

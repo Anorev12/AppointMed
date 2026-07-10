@@ -29,13 +29,16 @@ class AppointmentAdapter(
         holder.binding.tvAptRef.text = apt.id
 
         val isConfirmed = apt.status == "confirmed"
+        val isCancelled = apt.status == "cancelled"
         holder.binding.tvAptStatus.text = apt.status.replaceFirstChar { it.uppercase() }
-        holder.binding.tvAptStatus.setBackgroundColor(
-            ContextCompat.getColor(context, if (isConfirmed) R.color.success_soft else R.color.danger_soft)
-        )
-        holder.binding.tvAptStatus.setTextColor(
-            ContextCompat.getColor(context, if (isConfirmed) R.color.success else R.color.danger)
-        )
+
+        val (bgColor, textColor) = when {
+            isConfirmed -> R.color.success_soft to R.color.success
+            isCancelled -> R.color.danger_soft to R.color.danger
+            else -> R.color.border to R.color.ink_soft // "completed"
+        }
+        holder.binding.tvAptStatus.setBackgroundColor(ContextCompat.getColor(context, bgColor))
+        holder.binding.tvAptStatus.setTextColor(ContextCompat.getColor(context, textColor))
 
         holder.binding.btnCancelApt.visibility = if (isConfirmed) View.VISIBLE else View.GONE
         holder.binding.btnCancelApt.setOnClickListener {

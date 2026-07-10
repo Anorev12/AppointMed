@@ -3,6 +3,7 @@ import android.content.Context
 import com.example.appointmed.features.doctor.api.AvailabilityApiService
 import com.example.appointmed.features.auth.api.AuthApiService
 import com.example.appointmed.features.admin.api.AdminApiService
+import com.example.appointmed.features.patient.api.PatientApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -52,5 +53,8 @@ object RetrofitClient {
     }
     fun getAdminApi(context: Context): AdminApiService {
         return getInstance(context).create(AdminApiService::class.java)
+    }
+    fun getPatientApi(context: Context): PatientApiService {
+        return getInstance(context).create(PatientApiService::class.java)
     }
 }
