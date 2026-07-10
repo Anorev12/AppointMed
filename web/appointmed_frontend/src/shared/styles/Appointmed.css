@@ -682,6 +682,7 @@
 .db-badge.confirmed{ background:rgba(76,159,112,.14); color:var(--green); }
 .db-badge.pending{ background:rgba(214,161,59,.16); color:var(--amber); }
 .db-badge.cancelled{ background:rgba(193,91,74,.14); color:var(--alert); }
+.db-badge.completed{ background:rgba(74,123,166,.14); color:var(--ink-soft); }
 .db-badge.open{ background:rgba(91,155,213,.15); color:var(--stamp-dark); }
 .db-badge.reserved{ background:#EEF1F0; color:#8A9490; }
 .db-badge.unavailable{ background:#F1E7E5; color:var(--alert); }

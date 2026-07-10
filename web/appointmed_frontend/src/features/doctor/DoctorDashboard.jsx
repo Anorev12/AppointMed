@@ -1,22 +1,21 @@
 import { useState, useEffect } from "react";
 import "../../shared/styles/Appointmed.css";
 import { AvailabilityAPI } from "./api/availabilityApi";
+import { DoctorAppointmentsAPI } from "./api/appointmentsApi";
 
 /**
  * AppointMed — Doctor Dashboard
  * Covers: FR-014, FR-015, FR-017, FR-018, FR-019 (availability + schedule)
+ * and the doctor side of FR-006..FR-013 (viewing/cancelling/completing
+ * appointments patients booked with them).
  *
- * Availability panel is wired to the backend (/api/doctor/availability).
- * The appointments table below is still local mock data — confirm/decline
- * wiring is a separate task.
+ * Both the availability panel and the appointments table are wired to the
+ * backend (/api/doctor/availability, /api/doctor/appointments).
  */
 
-const INITIAL_APPOINTMENTS = [
-  { id: "APT-102938", patient: "Juan Dela Cruz", date: "2026-07-10", time: "09:00", status: "confirmed" },
-  { id: "APT-103012", patient: "Maria Santos", date: "2026-07-10", time: "09:30", status: "pending" },
-  { id: "APT-102890", patient: "Pedro Reyes", date: "2026-07-11", time: "10:00", status: "confirmed" },
-  { id: "APT-101877", patient: "Ana Lim", date: "2026-06-30", time: "10:30", status: "cancelled" },
-];
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -30,8 +29,11 @@ function daysArrayToMap(daysArray) {
 
 export default function DoctorDashboard({ doctorName = "Dr. Reyes", onLogout }) {
   const [view, setView] = useState("schedule"); // schedule | availability
-  const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
-  const [filter, setFilter] = useState("all"); // all | today | week
+  const [appointments, setAppointments] = useState([]);
+  const [apptsLoading, setApptsLoading] = useState(true);
+  const [apptsError, setApptsError] = useState("");
+  const [actioningId, setActioningId] = useState(null);
+  const [filter, setFilter] = useState("all"); // all | today
 
   // ---- Availability state (backed by the API) ----
   const [workingDays, setWorkingDays] = useState({
@@ -49,6 +51,7 @@ export default function DoctorDashboard({ doctorName = "Dr. Reyes", onLogout }) 
 
   useEffect(() => {
     loadAvailability();
+    loadAppointments();
   }, []);
 
   async function loadAvailability() {
@@ -66,17 +69,51 @@ export default function DoctorDashboard({ doctorName = "Dr. Reyes", onLogout }) 
     }
   }
 
-  const todayCount = appointments.filter((a) => a.date === "2026-07-10" && a.status !== "cancelled").length;
-  const pendingCount = appointments.filter((a) => a.status === "pending").length;
+  async function loadAppointments() {
+    setApptsLoading(true);
+    setApptsError("");
+    try {
+      const data = await DoctorAppointmentsAPI.list();
+      setAppointments(data || []);
+    } catch (err) {
+      setApptsError(err.message || "Couldn't load your appointments.");
+    } finally {
+      setApptsLoading(false);
+    }
+  }
+
+  async function markCompleted(id) {
+    setActioningId(id);
+    setApptsError("");
+    try {
+      const updated = await DoctorAppointmentsAPI.complete(id);
+      setAppointments((prev) => prev.map((a) => (a.id === id ? updated : a)));
+    } catch (err) {
+      setApptsError(err.message || "Couldn't mark that appointment complete.");
+    } finally {
+      setActioningId(null);
+    }
+  }
+
+  async function cancelAppointment(id) {
+    setActioningId(id);
+    setApptsError("");
+    try {
+      const updated = await DoctorAppointmentsAPI.cancel(id);
+      setAppointments((prev) => prev.map((a) => (a.id === id ? updated : a)));
+    } catch (err) {
+      setApptsError(err.message || "Couldn't cancel that appointment.");
+    } finally {
+      setActioningId(null);
+    }
+  }
+
+  const today = todayStr();
+  const todayCount = appointments.filter((a) => a.date === today && a.status === "CONFIRMED").length;
+  const upcomingCount = appointments.filter((a) => a.date >= today && a.status === "CONFIRMED").length;
 
   const visibleAppointments =
-    filter === "today"
-      ? appointments.filter((a) => a.date === "2026-07-10")
-      : appointments;
-
-  function updateStatus(id, status) {
-    setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
-  }
+    filter === "today" ? appointments.filter((a) => a.date === today) : appointments;
 
   function toggleDay(day) {
     setWorkingDays((prev) => ({ ...prev, [day]: !prev[day] }));
@@ -190,16 +227,16 @@ export default function DoctorDashboard({ doctorName = "Dr. Reyes", onLogout }) 
             <>
               <div className="db-stats-grid">
                 <div className="db-stat-card">
-                  <div className="db-stat-value">{todayCount}</div>
+                  <div className="db-stat-value">{apptsLoading ? "…" : todayCount}</div>
                   <div className="db-stat-label">Appointments today</div>
                 </div>
                 <div className="db-stat-card">
-                  <div className="db-stat-value">{pendingCount}</div>
-                  <div className="db-stat-label">Pending confirmation</div>
+                  <div className="db-stat-value">{apptsLoading ? "…" : upcomingCount}</div>
+                  <div className="db-stat-label">Upcoming confirmed</div>
                 </div>
                 <div className="db-stat-card">
-                  <div className="db-stat-value">{appointments.length}</div>
-                  <div className="db-stat-label">Total this month</div>
+                  <div className="db-stat-value">{apptsLoading ? "…" : appointments.length}</div>
+                  <div className="db-stat-label">Total on record</div>
                 </div>
               </div>
 
@@ -222,49 +259,66 @@ export default function DoctorDashboard({ doctorName = "Dr. Reyes", onLogout }) 
                   </div>
                 </div>
                 <div className="db-panel-body no-pad">
-                  <table className="db-table">
-                    <thead>
-                      <tr>
-                        <th>Reference</th>
-                        <th>Patient</th>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Status</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleAppointments.map((a) => (
-                        <tr key={a.id}>
-                          <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.id}</td>
-                          <td>{a.patient}</td>
-                          <td>{a.date}</td>
-                          <td>{a.time}</td>
-                          <td>
-                            <span className={`db-badge ${a.status}`}>{a.status}</span>
-                          </td>
-                          <td>
-                            {a.status === "pending" && (
-                              <div style={{ display: "flex", gap: 6 }}>
-                                <button
-                                  className="db-btn outline sm"
-                                  onClick={() => updateStatus(a.id, "confirmed")}
-                                >
-                                  Confirm
-                                </button>
-                                <button
-                                  className="db-btn danger sm"
-                                  onClick={() => updateStatus(a.id, "cancelled")}
-                                >
-                                  Decline
-                                </button>
-                              </div>
-                            )}
-                          </td>
+                  {apptsError && (
+                    <div className="db-error" style={{ margin: "16px 20px 0" }}>
+                      {apptsError}
+                    </div>
+                  )}
+                  {apptsLoading ? (
+                    <div className="db-empty" style={{ padding: 20 }}>
+                      Loading…
+                    </div>
+                  ) : visibleAppointments.length === 0 ? (
+                    <div className="db-empty" style={{ padding: 20 }}>
+                      No appointments to show.
+                    </div>
+                  ) : (
+                    <table className="db-table">
+                      <thead>
+                        <tr>
+                          <th>Reference</th>
+                          <th>Patient</th>
+                          <th>Date</th>
+                          <th>Time</th>
+                          <th>Status</th>
+                          <th></th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {visibleAppointments.map((a) => (
+                          <tr key={a.id}>
+                            <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
+                            <td>{a.patientName}</td>
+                            <td>{a.date}</td>
+                            <td>{a.time}</td>
+                            <td>
+                              <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
+                            </td>
+                            <td>
+                              {a.status === "CONFIRMED" && (
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  <button
+                                    className="db-btn outline sm"
+                                    disabled={actioningId === a.id}
+                                    onClick={() => markCompleted(a.id)}
+                                  >
+                                    {actioningId === a.id ? "…" : "Mark completed"}
+                                  </button>
+                                  <button
+                                    className="db-btn danger sm"
+                                    disabled={actioningId === a.id}
+                                    onClick={() => cancelAppointment(a.id)}
+                                  >
+                                    {actioningId === a.id ? "…" : "Cancel"}
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
             </>
