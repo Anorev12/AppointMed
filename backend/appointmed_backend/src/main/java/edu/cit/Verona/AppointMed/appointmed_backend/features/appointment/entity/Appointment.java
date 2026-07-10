@@ -11,9 +11,9 @@ import java.time.LocalTime;
  * time (snapshot of the doctor as they were when booked) so a doctor later
  * changing their specialization doesn't rewrite history on old bookings.
  *
- * status is one of "CONFIRMED" / "CANCELLED" — kept as a plain String to
- * match the rest of this codebase's style (see DoctorAvailability, etc.)
- * rather than introducing a new enum pattern.
+ * status is one of "CONFIRMED" / "CANCELLED" / "COMPLETED" — kept as a plain
+ * String to match the rest of this codebase's style (see DoctorAvailability,
+ * etc.) rather than introducing a new enum pattern.
  */
 @Entity
 @Table(name = "appointments")
@@ -28,6 +28,9 @@ public class Appointment {
 
     @Column(nullable = false)
     private Long patientId;
+
+    @Column(nullable = false)
+    private String patientName;
 
     @Column(nullable = false)
     private Long doctorId;
@@ -59,6 +62,9 @@ public class Appointment {
 
     public Long getPatientId() { return patientId; }
     public void setPatientId(Long patientId) { this.patientId = patientId; }
+
+    public String getPatientName() { return patientName; }
+    public void setPatientName(String patientName) { this.patientName = patientName; }
 
     public Long getDoctorId() { return doctorId; }
     public void setDoctorId(Long doctorId) { this.doctorId = doctorId; }

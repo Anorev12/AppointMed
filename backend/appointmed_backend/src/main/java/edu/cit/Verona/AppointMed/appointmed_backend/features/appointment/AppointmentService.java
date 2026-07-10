@@ -9,6 +9,8 @@ import edu.cit.Verona.AppointMed.appointmed_backend.features.availability.Availa
 import edu.cit.Verona.AppointMed.appointmed_backend.features.availability.dto.AvailabilityResponse;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.entity.Doctor;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.repository.DoctorRepository;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.entity.Patient;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.repository.PatientRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,13 +41,16 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final AvailabilityService availabilityService;
     private final DoctorRepository doctorRepository;
+    private final PatientRepository patientRepository;
 
     public AppointmentService(AppointmentRepository appointmentRepository,
                                AvailabilityService availabilityService,
-                               DoctorRepository doctorRepository) {
+                               DoctorRepository doctorRepository,
+                               PatientRepository patientRepository) {
         this.appointmentRepository = appointmentRepository;
         this.availabilityService = availabilityService;
         this.doctorRepository = doctorRepository;
+        this.patientRepository = patientRepository;
     }
 
     @Transactional
@@ -62,8 +67,12 @@ public class AppointmentService {
 
         validateSlot(doctor.getId(), date, time);
 
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found."));
+
         Appointment appointment = new Appointment();
         appointment.setPatientId(patientId);
+        appointment.setPatientName(patient.getFullName());
         appointment.setDoctorId(doctor.getId());
         appointment.setDoctorName(doctor.getFullName());
         appointment.setSpecialization(doctor.getSpecialization());
@@ -86,6 +95,13 @@ public class AppointmentService {
                 .collect(Collectors.toList());
     }
 
+    public List<AppointmentResponse> listForDoctor(Long doctorId) {
+        return appointmentRepository.findByDoctorIdOrderByDateDescTimeDesc(doctorId)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public AppointmentResponse cancel(Long patientId, Long appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
@@ -99,6 +115,42 @@ public class AppointmentService {
         }
 
         appointment.setStatus("CANCELLED");
+        appointment = appointmentRepository.save(appointment);
+        return toResponse(appointment);
+    }
+
+    /** Doctor-initiated cancellation — e.g. the doctor can't make that slot after all. */
+    @Transactional
+    public AppointmentResponse cancelByDoctor(Long doctorId, Long appointmentId) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Appointment not found."));
+
+        if (!appointment.getDoctorId().equals(doctorId)) {
+            throw new SecurityException("This appointment doesn't belong to you.");
+        }
+        if ("CANCELLED".equals(appointment.getStatus())) {
+            throw new IllegalArgumentException("This appointment is already cancelled.");
+        }
+
+        appointment.setStatus("CANCELLED");
+        appointment = appointmentRepository.save(appointment);
+        return toResponse(appointment);
+    }
+
+    /** Lets a doctor close out a visit that actually happened, for record-keeping. */
+    @Transactional
+    public AppointmentResponse completeByDoctor(Long doctorId, Long appointmentId) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Appointment not found."));
+
+        if (!appointment.getDoctorId().equals(doctorId)) {
+            throw new SecurityException("This appointment doesn't belong to you.");
+        }
+        if (!"CONFIRMED".equals(appointment.getStatus())) {
+            throw new IllegalArgumentException("Only confirmed appointments can be marked complete.");
+        }
+
+        appointment.setStatus("COMPLETED");
         appointment = appointmentRepository.save(appointment);
         return toResponse(appointment);
     }
@@ -183,6 +235,7 @@ public class AppointmentService {
                 a.getDoctorId(),
                 a.getDoctorName(),
                 a.getSpecialization(),
+                a.getPatientName(),
                 a.getDate().toString(),
                 a.getTime().format(TIME_FMT),
                 a.getStatus()
@@ -205,4 +258,3 @@ public class AppointmentService {
         }
     }
 }
-

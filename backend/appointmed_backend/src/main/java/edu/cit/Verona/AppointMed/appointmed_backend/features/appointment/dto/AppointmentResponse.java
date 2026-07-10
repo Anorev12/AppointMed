@@ -6,19 +6,21 @@ public class AppointmentResponse {
     private Long doctorId;
     private String doctorName;
     private String specialization;
+    private String patientName;
     private String date; // "yyyy-MM-dd"
     private String time; // "HH:mm"
-    private String status; // "CONFIRMED" | "CANCELLED"
+    private String status; // "CONFIRMED" | "CANCELLED" | "COMPLETED"
 
     public AppointmentResponse() {}
 
     public AppointmentResponse(Long id, String reference, Long doctorId, String doctorName,
-                                String specialization, String date, String time, String status) {
+                                String specialization, String patientName, String date, String time, String status) {
         this.id = id;
         this.reference = reference;
         this.doctorId = doctorId;
         this.doctorName = doctorName;
         this.specialization = specialization;
+        this.patientName = patientName;
         this.date = date;
         this.time = time;
         this.status = status;
@@ -38,6 +40,9 @@ public class AppointmentResponse {
 
     public String getSpecialization() { return specialization; }
     public void setSpecialization(String specialization) { this.specialization = specialization; }
+
+    public String getPatientName() { return patientName; }
+    public void setPatientName(String patientName) { this.patientName = patientName; }
 
     public String getDate() { return date; }
     public void setDate(String date) { this.date = date; }
