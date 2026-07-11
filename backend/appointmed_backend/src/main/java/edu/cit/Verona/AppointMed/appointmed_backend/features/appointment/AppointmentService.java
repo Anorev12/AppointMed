@@ -113,7 +113,43 @@ public class AppointmentService {
      */
     public List<AppointmentResponse> listForPatient(Long patientId, String status, String keyword, String from, String to) {
         List<Appointment> appointments = appointmentRepository.findByPatientIdOrderByDateDescTimeDesc(patientId);
+        return applyFilters(appointments, status, keyword, from, to).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
 
+    public List<AppointmentResponse> listForPatient(Long patientId) {
+        return listForPatient(patientId, null, null, null, null);
+    }
+
+    /**
+     * FR-035: admin-wide view across every patient/doctor, with the same
+     * optional status/keyword/from/to filters as the patient history search.
+     * keyword additionally matches the patient's name, since an admin (unlike
+     * a patient browsing their own history) needs to search across patients.
+     */
+    public List<AppointmentResponse> listAll(String status, String keyword, String from, String to) {
+        List<Appointment> appointments = appointmentRepository.findAllByOrderByDateDescTimeDesc();
+
+        LocalDate fromDate = (from == null || from.isBlank()) ? null : parseDate(from);
+        LocalDate toDate = (to == null || to.isBlank()) ? null : parseDate(to);
+        String needle = (keyword == null || keyword.isBlank()) ? null : keyword.trim().toLowerCase(Locale.ROOT);
+
+        return appointments.stream()
+                .filter(a -> status == null || status.isBlank() || a.getStatus().equalsIgnoreCase(status.trim()))
+                .filter(a -> fromDate == null || !a.getDate().isBefore(fromDate))
+                .filter(a -> toDate == null || !a.getDate().isAfter(toDate))
+                .filter(a -> needle == null
+                        || a.getDoctorName().toLowerCase(Locale.ROOT).contains(needle)
+                        || a.getPatientName().toLowerCase(Locale.ROOT).contains(needle)
+                        || (a.getSpecialization() != null && a.getSpecialization().toLowerCase(Locale.ROOT).contains(needle))
+                        || a.getReference().toLowerCase(Locale.ROOT).contains(needle))
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /** Shared status/date-range/keyword filter used by both the patient and admin history views. */
+    private List<Appointment> applyFilters(List<Appointment> appointments, String status, String keyword, String from, String to) {
         LocalDate fromDate = (from == null || from.isBlank()) ? null : parseDate(from);
         LocalDate toDate = (to == null || to.isBlank()) ? null : parseDate(to);
         String needle = (keyword == null || keyword.isBlank()) ? null : keyword.trim().toLowerCase(Locale.ROOT);
@@ -126,12 +162,7 @@ public class AppointmentService {
                         || a.getDoctorName().toLowerCase(Locale.ROOT).contains(needle)
                         || (a.getSpecialization() != null && a.getSpecialization().toLowerCase(Locale.ROOT).contains(needle))
                         || a.getReference().toLowerCase(Locale.ROOT).contains(needle))
-                .map(this::toResponse)
                 .collect(Collectors.toList());
-    }
-
-    public List<AppointmentResponse> listForPatient(Long patientId) {
-        return listForPatient(patientId, null, null, null, null);
     }
 
     public List<AppointmentResponse> listForDoctor(Long doctorId) {
@@ -207,6 +238,25 @@ public class AppointmentService {
                     "This appointment can no longer be changed — it's within the " + cutoffHours
                             + "-hour cutoff period. Please contact the clinic directly.");
         }
+    }
+
+    /**
+     * FR-016/FR-035: admin override cancel — unlike the patient-initiated
+     * cancel(), this ignores the reschedule cutoff window and doesn't check
+     * appointment ownership, since an admin can act on any booking.
+     */
+    @Transactional
+    public AppointmentResponse cancelByAdmin(Long appointmentId) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Appointment not found."));
+
+        if ("CANCELLED".equals(appointment.getStatus())) {
+            throw new IllegalArgumentException("This appointment is already cancelled.");
+        }
+
+        appointment.setStatus("CANCELLED");
+        appointment = appointmentRepository.save(appointment);
+        return toResponse(appointment);
     }
 
     /** Doctor-initiated cancellation — e.g. the doctor can't make that slot after all. */
