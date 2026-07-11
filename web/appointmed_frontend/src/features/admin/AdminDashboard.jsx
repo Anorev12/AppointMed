@@ -1,64 +1,132 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import "../../shared/styles/Appointmed.css";
 import { AdminAPI } from "./api/adminApi";
 
 /**
  * AppointMed — Admin Dashboard
  * Covers: FR-028, FR-030, FR-032, FR-034, FR-035 (overview, user mgmt, reports)
- * and FR-016 (override doctor availability)
+ * and FR-016 (override any appointment).
+ *
+ * Fully wired to the backend:
+ *  - GET  /api/admin/patients                    (patient roster)
+ *  - GET  /api/admin/patients/{id}/appointments   (per-patient history)
+ *  - GET  /api/admin/doctors                      (doctor roster + status)
+ *  - PUT  /api/admin/doctors/{id}/status          (mark active / on leave)
+ *  - POST /api/admin/doctors                      (create doctor account)
+ *  - GET  /api/admin/appointments                 (clinic-wide appointments)
+ *  - PUT  /api/admin/appointments/{id}/cancel     (override cancel)
  */
 
-const INITIAL_PATIENTS = [
-  { id: 1, name: "Juan Dela Cruz", email: "juan.delacruz@email.com", contact: "0917 123 4567" },
-  { id: 2, name: "Maria Santos", email: "maria.santos@email.com", contact: "0918 222 3333" },
-  { id: 3, name: "Ana Lim", email: "ana.lim@email.com", contact: "0919 444 5555" },
-];
-
-const INITIAL_DOCTORS = [
-  { id: 1, name: "Dr. Reyes", specialization: "Pediatrics", status: "active" },
-  { id: 2, name: "Dr. Tan", specialization: "Internal Medicine", status: "active" },
-  { id: 3, name: "Dr. Cruz", specialization: "Dermatology", status: "on leave" },
-];
-
-const INITIAL_APPOINTMENTS = [
-  { id: "APT-102938", patient: "Juan Dela Cruz", doctor: "Dr. Reyes", date: "2026-07-10", time: "09:00", status: "confirmed" },
-  { id: "APT-103012", patient: "Maria Santos", doctor: "Dr. Reyes", date: "2026-07-10", time: "09:30", status: "pending" },
-  { id: "APT-102890", patient: "Ana Lim", doctor: "Dr. Tan", date: "2026-07-11", time: "10:00", status: "confirmed" },
-  { id: "APT-101877", patient: "Juan Dela Cruz", doctor: "Dr. Cruz", date: "2026-06-30", time: "10:30", status: "cancelled" },
-];
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export default function AdminDashboard({ adminName = "Admin", onLogout }) {
   const [view, setView] = useState("overview"); // overview | patients | doctors | appointments
   const [search, setSearch] = useState("");
-  const [patients] = useState(INITIAL_PATIENTS);
-  const [doctors, setDoctors] = useState(INITIAL_DOCTORS);
-  const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
+
+  // ---- Patients ----
+  const [patients, setPatients] = useState([]);
+  const [patientsLoading, setPatientsLoading] = useState(true);
+  const [patientsError, setPatientsError] = useState("");
+
+  // ---- Doctors ----
+  const [doctors, setDoctors] = useState([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(true);
+  const [doctorsError, setDoctorsError] = useState("");
+  const [statusUpdatingId, setStatusUpdatingId] = useState(null);
+
+  // ---- Appointments ----
+  const [appointments, setAppointments] = useState([]);
+  const [apptsLoading, setApptsLoading] = useState(true);
+  const [apptsError, setApptsError] = useState("");
+  const [cancellingId, setCancellingId] = useState(null);
+
+  // ---- Add doctor form ----
   const [showAddDoctor, setShowAddDoctor] = useState(false);
   const [newDoctor, setNewDoctor] = useState({ fullName: "", email: "", password: "", specialization: "" });
   const [addDoctorError, setAddDoctorError] = useState("");
   const [addingDoctor, setAddingDoctor] = useState(false);
 
-  const todayCount = appointments.filter((a) => a.date === "2026-07-10" && a.status !== "cancelled").length;
-  const pendingCount = appointments.filter((a) => a.status === "pending").length;
+  // ---- View history modal ----
+  const [historyPatient, setHistoryPatient] = useState(null); // { id, fullName } | null
+  const [historyAppts, setHistoryAppts] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+
+  const loadPatients = useCallback(async () => {
+    setPatientsLoading(true);
+    setPatientsError("");
+    try {
+      const data = await AdminAPI.listPatients();
+      setPatients(data);
+    } catch (err) {
+      setPatientsError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't load patients.");
+    } finally {
+      setPatientsLoading(false);
+    }
+  }, []);
+
+  const loadDoctors = useCallback(async () => {
+    setDoctorsLoading(true);
+    setDoctorsError("");
+    try {
+      const data = await AdminAPI.listDoctors();
+      setDoctors(data);
+    } catch (err) {
+      setDoctorsError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't load doctors.");
+    } finally {
+      setDoctorsLoading(false);
+    }
+  }, []);
+
+  const loadAppointments = useCallback(async () => {
+    setApptsLoading(true);
+    setApptsError("");
+    try {
+      const data = await AdminAPI.listAppointments();
+      setAppointments(data);
+    } catch (err) {
+      setApptsError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't load appointments.");
+    } finally {
+      setApptsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPatients();
+    loadDoctors();
+    loadAppointments();
+  }, [loadPatients, loadDoctors, loadAppointments]);
+
+  const todayCount = appointments.filter((a) => a.date === todayStr() && a.status !== "CANCELLED").length;
+  const completedCount = appointments.filter((a) => a.status === "COMPLETED").length;
 
   const filteredPatients = patients.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
+    p.fullName.toLowerCase().includes(search.toLowerCase())
   );
   const filteredDoctors = doctors.filter((d) =>
-    d.name.toLowerCase().includes(search.toLowerCase())
+    d.fullName.toLowerCase().includes(search.toLowerCase())
   );
   const filteredAppointments = appointments.filter(
     (a) =>
-      a.patient.toLowerCase().includes(search.toLowerCase()) ||
-      a.doctor.toLowerCase().includes(search.toLowerCase())
+      a.patientName.toLowerCase().includes(search.toLowerCase()) ||
+      a.doctorName.toLowerCase().includes(search.toLowerCase()) ||
+      a.reference.toLowerCase().includes(search.toLowerCase())
   );
 
-  function toggleDoctorStatus(id) {
-    setDoctors((prev) =>
-      prev.map((d) =>
-        d.id === id ? { ...d, status: d.status === "active" ? "on leave" : "active" } : d
-      )
-    );
+  async function toggleDoctorStatus(doctor) {
+    const nextStatus = doctor.status === "ACTIVE" ? "ON_LEAVE" : "ACTIVE";
+    setStatusUpdatingId(doctor.id);
+    setDoctorsError("");
+    try {
+      const updated = await AdminAPI.setDoctorStatus(doctor.id, nextStatus);
+      setDoctors((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+    } catch (err) {
+      setDoctorsError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't update doctor status.");
+    } finally {
+      setStatusUpdatingId(null);
+    }
   }
 
   async function createDoctor(ev) {
@@ -73,10 +141,7 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
     setAddingDoctor(true);
     try {
       const data = await AdminAPI.createDoctor(newDoctor);
-      setDoctors((prev) => [
-        ...prev,
-        { id: data.id, name: data.fullName, specialization: data.specialization, status: "active" },
-      ]);
+      setDoctors((prev) => [...prev, data]);
       setNewDoctor({ fullName: "", email: "", password: "", specialization: "" });
       setShowAddDoctor(false);
     } catch (err) {
@@ -90,10 +155,38 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
     }
   }
 
-  function overrideCancel(id) {
-    setAppointments((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status: "cancelled" } : a))
-    );
+  async function overrideCancel(id) {
+    setCancellingId(id);
+    setApptsError("");
+    try {
+      const updated = await AdminAPI.overrideCancel(id);
+      setAppointments((prev) => prev.map((a) => (a.id === id ? updated : a)));
+    } catch (err) {
+      setApptsError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't cancel that appointment.");
+    } finally {
+      setCancellingId(null);
+    }
+  }
+
+  async function openHistory(patient) {
+    setHistoryPatient(patient);
+    setHistoryLoading(true);
+    setHistoryError("");
+    setHistoryAppts([]);
+    try {
+      const data = await AdminAPI.patientHistory(patient.id);
+      setHistoryAppts(data);
+    } catch (err) {
+      setHistoryError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't load that patient's history.");
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  function closeHistory() {
+    setHistoryPatient(null);
+    setHistoryAppts([]);
+    setHistoryError("");
   }
 
   return (
@@ -182,20 +275,22 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
             <>
               <div className="db-stats-grid">
                 <div className="db-stat-card">
-                  <div className="db-stat-value">{patients.length}</div>
+                  <div className="db-stat-value">{patientsLoading ? "…" : patients.length}</div>
                   <div className="db-stat-label">Registered patients</div>
                 </div>
                 <div className="db-stat-card">
-                  <div className="db-stat-value">{doctors.length}</div>
+                  <div className="db-stat-value">
+                    {doctorsLoading ? "…" : doctors.filter((d) => d.status === "ACTIVE").length}
+                  </div>
                   <div className="db-stat-label">Active doctors</div>
                 </div>
                 <div className="db-stat-card">
-                  <div className="db-stat-value">{todayCount}</div>
+                  <div className="db-stat-value">{apptsLoading ? "…" : todayCount}</div>
                   <div className="db-stat-label">Appointments today</div>
                 </div>
                 <div className="db-stat-card">
-                  <div className="db-stat-value">{pendingCount}</div>
-                  <div className="db-stat-label">Pending requests</div>
+                  <div className="db-stat-value">{apptsLoading ? "…" : completedCount}</div>
+                  <div className="db-stat-label">Completed appointments</div>
                 </div>
               </div>
 
@@ -207,30 +302,38 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
                   </button>
                 </div>
                 <div className="db-panel-body no-pad">
-                  <table className="db-table">
-                    <thead>
-                      <tr>
-                        <th>Reference</th>
-                        <th>Patient</th>
-                        <th>Doctor</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {appointments.slice(0, 4).map((a) => (
-                        <tr key={a.id}>
-                          <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.id}</td>
-                          <td>{a.patient}</td>
-                          <td>{a.doctor}</td>
-                          <td>{a.date} · {a.time}</td>
-                          <td>
-                            <span className={`db-badge ${a.status}`}>{a.status}</span>
-                          </td>
+                  {apptsLoading ? (
+                    <div className="db-empty">Loading…</div>
+                  ) : apptsError ? (
+                    <div className="db-empty">{apptsError}</div>
+                  ) : appointments.length === 0 ? (
+                    <div className="db-empty">No appointments yet.</div>
+                  ) : (
+                    <table className="db-table">
+                      <thead>
+                        <tr>
+                          <th>Reference</th>
+                          <th>Patient</th>
+                          <th>Doctor</th>
+                          <th>Date</th>
+                          <th>Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {appointments.slice(0, 4).map((a) => (
+                          <tr key={a.id}>
+                            <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
+                            <td>{a.patientName}</td>
+                            <td>{a.doctorName}</td>
+                            <td>{a.date} · {a.time}</td>
+                            <td>
+                              <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
             </>
@@ -239,41 +342,54 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
           {/* ---------- APPOINTMENTS ---------- */}
           {view === "appointments" && (
             <div className="db-panel">
+              {apptsError && (
+                <div style={{ color: "var(--alert)", fontSize: 13, padding: "12px 20px 0" }}>{apptsError}</div>
+              )}
               <div className="db-panel-body no-pad">
-                <table className="db-table">
-                  <thead>
-                    <tr>
-                      <th>Reference</th>
-                      <th>Patient</th>
-                      <th>Doctor</th>
-                      <th>Date</th>
-                      <th>Time</th>
-                      <th>Status</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAppointments.map((a) => (
-                      <tr key={a.id}>
-                        <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.id}</td>
-                        <td>{a.patient}</td>
-                        <td>{a.doctor}</td>
-                        <td>{a.date}</td>
-                        <td>{a.time}</td>
-                        <td>
-                          <span className={`db-badge ${a.status}`}>{a.status}</span>
-                        </td>
-                        <td>
-                          {a.status !== "cancelled" && (
-                            <button className="db-btn danger sm" onClick={() => overrideCancel(a.id)}>
-                              Override cancel
-                            </button>
-                          )}
-                        </td>
+                {apptsLoading ? (
+                  <div className="db-empty">Loading appointments…</div>
+                ) : filteredAppointments.length === 0 ? (
+                  <div className="db-empty">No appointments found.</div>
+                ) : (
+                  <table className="db-table">
+                    <thead>
+                      <tr>
+                        <th>Reference</th>
+                        <th>Patient</th>
+                        <th>Doctor</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th></th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {filteredAppointments.map((a) => (
+                        <tr key={a.id}>
+                          <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
+                          <td>{a.patientName}</td>
+                          <td>{a.doctorName}</td>
+                          <td>{a.date}</td>
+                          <td>{a.time}</td>
+                          <td>
+                            <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
+                          </td>
+                          <td>
+                            {a.status !== "CANCELLED" && (
+                              <button
+                                className="db-btn danger sm"
+                                disabled={cancellingId === a.id}
+                                onClick={() => overrideCancel(a.id)}
+                              >
+                                {cancellingId === a.id ? "Cancelling…" : "Override cancel"}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           )}
@@ -281,29 +397,40 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
           {/* ---------- PATIENTS ---------- */}
           {view === "patients" && (
             <div className="db-panel">
+              {patientsError && (
+                <div style={{ color: "var(--alert)", fontSize: 13, padding: "12px 20px 0" }}>{patientsError}</div>
+              )}
               <div className="db-panel-body no-pad">
-                <table className="db-table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Contact</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPatients.map((p) => (
-                      <tr key={p.id}>
-                        <td>{p.name}</td>
-                        <td>{p.email}</td>
-                        <td>{p.contact}</td>
-                        <td>
-                          <button className="db-btn outline sm">View history</button>
-                        </td>
+                {patientsLoading ? (
+                  <div className="db-empty">Loading patients…</div>
+                ) : filteredPatients.length === 0 ? (
+                  <div className="db-empty">No patients found.</div>
+                ) : (
+                  <table className="db-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Contact</th>
+                        <th></th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {filteredPatients.map((p) => (
+                        <tr key={p.id}>
+                          <td>{p.fullName}</td>
+                          <td>{p.email}</td>
+                          <td>{p.contactNumber || "—"}</td>
+                          <td>
+                            <button className="db-btn outline sm" onClick={() => openHistory(p)}>
+                              View history
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           )}
@@ -391,41 +518,108 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
                     + Add doctor
                   </button>
                 </div>
+                {doctorsError && (
+                  <div style={{ color: "var(--alert)", fontSize: 13, padding: "0 20px 12px" }}>{doctorsError}</div>
+                )}
                 <div className="db-panel-body no-pad">
-                  <table className="db-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Specialization</th>
-                        <th>Status</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredDoctors.map((d) => (
-                        <tr key={d.id}>
-                          <td>{d.name}</td>
-                          <td>{d.specialization}</td>
-                          <td>
-                            <span className={`db-badge ${d.status === "active" ? "confirmed" : "unavailable"}`}>
-                              {d.status}
-                            </span>
-                          </td>
-                          <td>
-                            <button className="db-btn outline sm" onClick={() => toggleDoctorStatus(d.id)}>
-                              {d.status === "active" ? "Mark on leave" : "Mark active"}
-                            </button>
-                          </td>
+                  {doctorsLoading ? (
+                    <div className="db-empty">Loading doctors…</div>
+                  ) : filteredDoctors.length === 0 ? (
+                    <div className="db-empty">No doctors found.</div>
+                  ) : (
+                    <table className="db-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Specialization</th>
+                          <th>Status</th>
+                          <th></th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {filteredDoctors.map((d) => {
+                          const isActive = d.status === "ACTIVE";
+                          return (
+                            <tr key={d.id}>
+                              <td>{d.fullName}</td>
+                              <td>{d.specialization}</td>
+                              <td>
+                                <span className={`db-badge ${isActive ? "confirmed" : "unavailable"}`}>
+                                  {isActive ? "active" : "on leave"}
+                                </span>
+                              </td>
+                              <td>
+                                <button
+                                  className="db-btn outline sm"
+                                  disabled={statusUpdatingId === d.id}
+                                  onClick={() => toggleDoctorStatus(d)}
+                                >
+                                  {statusUpdatingId === d.id
+                                    ? "Updating…"
+                                    : isActive
+                                    ? "Mark on leave"
+                                    : "Mark active"}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
             </>
           )}
         </div>
       </div>
+
+      {/* ---------- View history modal ---------- */}
+      {historyPatient && (
+        <div className="db-modal-overlay" onClick={closeHistory}>
+          <div className="db-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="db-modal-title">{historyPatient.fullName}</div>
+            <div className="db-modal-sub">Appointment history</div>
+
+            {historyLoading ? (
+              <div className="db-empty">Loading…</div>
+            ) : historyError ? (
+              <div className="db-empty">{historyError}</div>
+            ) : historyAppts.length === 0 ? (
+              <div className="db-empty">No appointments for this patient yet.</div>
+            ) : (
+              <table className="db-table">
+                <thead>
+                  <tr>
+                    <th>Reference</th>
+                    <th>Doctor</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historyAppts.map((a) => (
+                    <tr key={a.id}>
+                      <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
+                      <td>{a.doctorName}</td>
+                      <td>{a.date} · {a.time}</td>
+                      <td>
+                        <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            <div className="db-modal-actions">
+              <button className="db-btn outline" onClick={closeHistory}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
