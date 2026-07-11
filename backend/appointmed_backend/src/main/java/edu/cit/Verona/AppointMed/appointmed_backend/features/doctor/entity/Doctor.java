@@ -18,6 +18,10 @@ public class Doctor {
     private String email;
     private String password;
     private String specialization;
+
+    /** "ACTIVE" | "ON_LEAVE" — set by an admin via PUT /api/admin/doctors/{id}/status. */
+    private String status = "ACTIVE";
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public Doctor() {}
@@ -36,6 +40,9 @@ public class Doctor {
 
     public String getSpecialization() { return specialization; }
     public void setSpecialization(String specialization) { this.specialization = specialization; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
