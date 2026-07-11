@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/paper"
@@ -28,47 +29,74 @@
             android:textColor="@color/ink_soft"
             android:textSize="13.5sp" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="2"
-            android:layout_marginBottom="8dp">
-
-            <include layout="@layout/item_stat_card" android:id="@+id/statPatients"
-                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:layout_marginEnd="8dp" />
-            <include layout="@layout/item_stat_card" android:id="@+id/statDoctorsCount"
-                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="2"
-            android:layout_marginBottom="16dp">
-
-            <include layout="@layout/item_stat_card" android:id="@+id/statTodayApts"
-                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:layout_marginEnd="8dp" />
-            <include layout="@layout/item_stat_card" android:id="@+id/statPendingApts"
-                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
-        </LinearLayout>
-
         <TextView
+            android:id="@+id/tvAdminOverviewLoading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="Recent appointments"
-            android:textColor="@color/ink"
-            android:textSize="15sp"
-            android:textStyle="bold" />
+            android:text="Loading…"
+            android:textColor="@color/ink_soft"
+            android:textSize="13.5sp" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvRecentAppointments"
+        <TextView
+            android:id="@+id/tvAdminOverviewError"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:textColor="@color/danger"
+            android:textSize="13.5sp"
+            android:visibility="gone"
+            tools:text="Can't reach the server. Check that it's running and try again." />
+
+        <LinearLayout
+            android:id="@+id/overviewContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2"
+                android:layout_marginBottom="8dp">
+
+                <include layout="@layout/item_stat_card" android:id="@+id/statPatients"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:layout_marginEnd="8dp" />
+                <include layout="@layout/item_stat_card" android:id="@+id/statDoctorsCount"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2"
+                android:layout_marginBottom="16dp">
+
+                <include layout="@layout/item_stat_card" android:id="@+id/statTodayApts"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:layout_marginEnd="8dp" />
+                <include layout="@layout/item_stat_card" android:id="@+id/statCompletedApts"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Recent appointments"
+                android:textColor="@color/ink"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvRecentAppointments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>
