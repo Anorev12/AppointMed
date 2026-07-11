@@ -61,7 +61,16 @@ class HomeFragment : Fragment() {
                 ) {
                     val appointments = apptsResponse.body()!!.map { it.toUi() }
                     val doctorCount = doctorsResponse.body()!!.size
-                    val upcoming = appointments.filter { it.status == "confirmed" }
+
+                    // Feature 1: "next appointment" is the nearest upcoming CONFIRMED
+                    // appointment by schedule date/time — never by booking/creation
+                    // order or appointment id. date is "yyyy-MM-dd" and time is
+                    // "HH:mm", both zero-padded, so plain string comparison sorts
+                    // them chronologically.
+                    val today = BookFragment.todayStr()
+                    val upcoming = appointments
+                        .filter { it.status == "confirmed" && it.date >= today }
+                        .sortedWith(compareBy({ it.date }, { it.time }))
 
                     bindStatCard(binding.statUpcoming, upcoming.size.toString(), "Upcoming appointments")
                     bindStatCard(binding.statTotal, appointments.size.toString(), "Total visits on record")
@@ -69,6 +78,7 @@ class HomeFragment : Fragment() {
 
                     if (upcoming.isEmpty()) {
                         binding.tvEmptyAppointment.visibility = View.VISIBLE
+                        binding.tvEmptyAppointment.text = "You have no upcoming appointments."
                         binding.nextAppointmentRow.visibility = View.GONE
                     } else {
                         val next = upcoming.first()

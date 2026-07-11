@@ -1,8 +1,9 @@
 package com.example.appointmed.features.patient.models
 
 data class Appointment(
-    val dbId: Long,     // real DB id — needed for the cancel API call
+    val dbId: Long,     // real DB id — needed for the cancel/reschedule API calls
     val id: String,     // human-readable reference shown to the patient, e.g. "APT-000123"
+    val doctorId: Long, // needed to re-query open slots when rescheduling
     val doctor: String,
     val specialization: String,
     val date: String,

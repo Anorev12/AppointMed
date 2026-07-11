@@ -24,6 +24,64 @@
         android:textColor="@color/ink_soft"
         android:textSize="13.5sp" />
 
+    <EditText
+        android:id="@+id/etHistorySearch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:background="@color/paper_card"
+        android:hint="Search by doctor, specialization, or reference no."
+        android:inputType="text"
+        android:padding="12dp"
+        android:textColor="@color/ink"
+        android:textColorHint="@color/ink_soft"
+        android:textSize="13.5sp" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnFilterAll"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:text="All" />
+
+            <Button
+                android:id="@+id/btnFilterConfirmed"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:text="Confirmed" />
+
+            <Button
+                android:id="@+id/btnFilterCancelled"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:text="Cancelled" />
+
+            <Button
+                android:id="@+id/btnFilterCompleted"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Completed" />
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
     <TextView
         android:id="@+id/tvHistoryLoading"
         android:layout_width="wrap_content"

@@ -9,7 +9,8 @@ import com.example.appointmed.databinding.ItemAppointmentBinding
 import com.example.appointmed.features.patient.models.Appointment
 class AppointmentAdapter(
     private val appointments: List<Appointment>,
-    private val onCancel: (Appointment) -> Unit
+    private val onCancel: (Appointment) -> Unit,
+    private val onReschedule: (Appointment) -> Unit
 ) : RecyclerView.Adapter<AppointmentAdapter.AppointmentViewHolder>() {
 
     inner class AppointmentViewHolder(val binding: ItemAppointmentBinding) :
@@ -40,9 +41,15 @@ class AppointmentAdapter(
         holder.binding.tvAptStatus.setBackgroundColor(ContextCompat.getColor(context, bgColor))
         holder.binding.tvAptStatus.setTextColor(ContextCompat.getColor(context, textColor))
 
+        // Only a still-confirmed, upcoming appointment can be changed (FR-011).
         holder.binding.btnCancelApt.visibility = if (isConfirmed) View.VISIBLE else View.GONE
+        holder.binding.btnRescheduleApt.visibility = if (isConfirmed) View.VISIBLE else View.GONE
+
         holder.binding.btnCancelApt.setOnClickListener {
             onCancel(apt)
+        }
+        holder.binding.btnRescheduleApt.setOnClickListener {
+            onReschedule(apt)
         }
     }
 

@@ -4,6 +4,7 @@ package com.example.appointmed.features.patient.models
 fun AppointmentApiResponse.toUi(): Appointment = Appointment(
     dbId = id,
     id = reference,
+    doctorId = doctorId,
     doctor = doctorName,
     specialization = specialization,
     date = date,

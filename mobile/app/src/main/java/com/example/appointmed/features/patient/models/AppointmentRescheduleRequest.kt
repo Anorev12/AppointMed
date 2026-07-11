@@ -1,4 +1,7 @@
 package com.example.appointmed.features.patient.models
 
-class AppointmentRescheduleRequest {
-}
+/** Payload for PUT /api/patient/appointments/{id}/reschedule (FR-011). */
+data class AppointmentRescheduleRequest(
+    val date: String, // "yyyy-MM-dd"
+    val time: String  // "HH:mm"
+)
