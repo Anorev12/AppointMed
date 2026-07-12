@@ -6,6 +6,10 @@ import edu.cit.Verona.AppointMed.appointmed_backend.features.availability.entity
 import edu.cit.Verona.AppointMed.appointmed_backend.features.availability.entity.UnavailableDate;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.availability.repository.DoctorAvailabilityRepository;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.availability.repository.UnavailableDateRepository;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.entity.Appointment;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.repository.AppointmentRepository;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.notification.NotificationService;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.repository.PatientRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,11 +28,20 @@ public class AvailabilityService {
 
     private final DoctorAvailabilityRepository availabilityRepository;
     private final UnavailableDateRepository unavailableDateRepository;
+    private final AppointmentRepository appointmentRepository;
+    private final PatientRepository patientRepository;
+    private final NotificationService notificationService;
 
     public AvailabilityService(DoctorAvailabilityRepository availabilityRepository,
-                                UnavailableDateRepository unavailableDateRepository) {
+                                UnavailableDateRepository unavailableDateRepository,
+                                AppointmentRepository appointmentRepository,
+                                PatientRepository patientRepository,
+                                NotificationService notificationService) {
         this.availabilityRepository = availabilityRepository;
         this.unavailableDateRepository = unavailableDateRepository;
+        this.appointmentRepository = appointmentRepository;
+        this.patientRepository = patientRepository;
+        this.notificationService = notificationService;
     }
 
     /** Fetches the doctor's schedule, creating sane defaults on first use. */
@@ -81,6 +94,15 @@ public class AvailabilityService {
         }
 
         unavailableDateRepository.save(new UnavailableDate(doctorId, date));
+
+        // FR-020: any patient already booked on this now-unavailable date needs to know.
+        // Informational only — doesn't auto-cancel; the clinic still follows up.
+        List<Appointment> affected = appointmentRepository.findByDoctorIdAndDateAndStatus(doctorId, date, "CONFIRMED");
+        for (Appointment appointment : affected) {
+            patientRepository.findById(appointment.getPatientId())
+                    .ifPresent(p -> notificationService.notifyScheduleChange(appointment, p.getEmail()));
+        }
+
         return getAvailability(doctorId);
     }
 
