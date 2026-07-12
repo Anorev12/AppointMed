@@ -10,6 +10,7 @@ import edu.cit.Verona.AppointMed.appointmed_backend.features.availability.Availa
 import edu.cit.Verona.AppointMed.appointmed_backend.features.availability.dto.AvailabilityResponse;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.entity.Doctor;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.repository.DoctorRepository;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.notification.NotificationService;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.entity.Patient;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.repository.PatientRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,6 +46,7 @@ public class AppointmentService {
     private final AvailabilityService availabilityService;
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
+    private final NotificationService notificationService;
 
     /**
      * Business rule: "Patients may reschedule or cancel an appointment only
@@ -59,11 +61,13 @@ public class AppointmentService {
     public AppointmentService(AppointmentRepository appointmentRepository,
                                AvailabilityService availabilityService,
                                DoctorRepository doctorRepository,
-                               PatientRepository patientRepository) {
+                               PatientRepository patientRepository,
+                               NotificationService notificationService) {
         this.appointmentRepository = appointmentRepository;
         this.availabilityService = availabilityService;
         this.doctorRepository = doctorRepository;
         this.patientRepository = patientRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -97,6 +101,9 @@ public class AppointmentService {
         appointment = appointmentRepository.save(appointment);
         appointment.setReference(String.format("APT-%06d", appointment.getId()));
         appointment = appointmentRepository.save(appointment);
+
+        notificationService.notifyBookingConfirmation(appointment, patient.getEmail()); // FR-013/FR-021
+        notificationService.notifyNewBookingToDoctor(appointment, doctor.getEmail());   // FR-027
 
         return toResponse(appointment);
     }
@@ -190,6 +197,11 @@ public class AppointmentService {
 
         appointment.setStatus("CANCELLED");
         appointment = appointmentRepository.save(appointment);
+
+        Appointment finalAppointment = appointment;
+        patientRepository.findById(patientId).ifPresent(p ->
+                notificationService.notifyCancellation(finalAppointment, p.getEmail(), "you")); // FR-023
+
         return toResponse(appointment);
     }
 
@@ -222,10 +234,18 @@ public class AppointmentService {
 
         validateSlot(appointment.getDoctorId(), newDate, newTime);
 
+        String oldDateStr = appointment.getDate().toString();
+        String oldTimeStr = appointment.getTime().format(TIME_FMT);
+
         appointment.setDate(newDate);
         appointment.setTime(newTime);
         // Reference number and status are preserved — this is the same booking, just moved.
         appointment = appointmentRepository.save(appointment);
+
+        Appointment finalAppointment = appointment;
+        patientRepository.findById(patientId).ifPresent(p ->
+                notificationService.notifyReschedule(finalAppointment, p.getEmail(), oldDateStr, oldTimeStr)); // FR-023
+
         return toResponse(appointment);
     }
 
@@ -256,6 +276,11 @@ public class AppointmentService {
 
         appointment.setStatus("CANCELLED");
         appointment = appointmentRepository.save(appointment);
+
+        Appointment finalAppointment = appointment;
+        patientRepository.findById(finalAppointment.getPatientId()).ifPresent(p ->
+                notificationService.notifyCancellation(finalAppointment, p.getEmail(), "the clinic administrator")); // FR-023
+
         return toResponse(appointment);
     }
 
@@ -274,6 +299,11 @@ public class AppointmentService {
 
         appointment.setStatus("CANCELLED");
         appointment = appointmentRepository.save(appointment);
+
+        Appointment finalAppointment = appointment;
+        patientRepository.findById(finalAppointment.getPatientId()).ifPresent(p ->
+                notificationService.notifyCancellation(finalAppointment, p.getEmail(), "your doctor")); // FR-023
+
         return toResponse(appointment);
     }
 

@@ -49,6 +49,13 @@ public class Appointment {
     @Column(nullable = false)
     private String status = "CONFIRMED";
 
+    /** FR-022: tracked so the reminder scheduler never sends the same reminder twice. */
+    @Column(nullable = false)
+    private boolean reminder24hSent = false;
+
+    @Column(nullable = false)
+    private boolean reminder1hSent = false;
+
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -83,6 +90,12 @@ public class Appointment {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public boolean isReminder24hSent() { return reminder24hSent; }
+    public void setReminder24hSent(boolean reminder24hSent) { this.reminder24hSent = reminder24hSent; }
+
+    public boolean isReminder1hSent() { return reminder1hSent; }
+    public void setReminder1hSent(boolean reminder1hSent) { this.reminder1hSent = reminder1hSent; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
