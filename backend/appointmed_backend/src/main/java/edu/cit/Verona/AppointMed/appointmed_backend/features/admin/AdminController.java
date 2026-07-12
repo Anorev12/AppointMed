@@ -144,6 +144,15 @@ public class AdminController {
         }
     }
 
+    /** FR-025: notification log — every confirmation, cancellation, reschedule, and reminder ever attempted. */
+    @GetMapping("/notifications")
+    public ResponseEntity<?> listNotifications(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        ResponseEntity<?> authError = requireAdmin(authHeader);
+        if (authError != null) return authError;
+
+        return ResponseEntity.ok(adminService.listNotifications());
+    }
+
     /** Returns null if the caller is a valid admin, or an error response to return immediately. */
     private ResponseEntity<?> requireAdmin(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -159,3 +168,4 @@ public class AdminController {
         return null;
     }
 }
+

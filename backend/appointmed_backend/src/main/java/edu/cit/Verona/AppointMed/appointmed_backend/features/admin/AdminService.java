@@ -6,6 +6,8 @@ import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.repository.Ad
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.dto.DoctorResponse;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.entity.Doctor;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.repository.DoctorRepository;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.notification.dto.NotificationResponse;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.notification.repository.NotificationRepository;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.entity.Patient;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.repository.PatientRepository;
 import org.springframework.stereotype.Service;
@@ -22,11 +24,14 @@ public class AdminService {
     private final AdminRepository adminRepository;
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
+    private final NotificationRepository notificationRepository;
 
-    public AdminService(AdminRepository adminRepository, PatientRepository patientRepository, DoctorRepository doctorRepository) {
+    public AdminService(AdminRepository adminRepository, PatientRepository patientRepository,
+                         DoctorRepository doctorRepository, NotificationRepository notificationRepository) {
         this.adminRepository = adminRepository;
         this.patientRepository = patientRepository;
         this.doctorRepository = doctorRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     /** Called by the unified login endpoint once it's already checked the email ends in the admin domain. */
@@ -82,5 +87,12 @@ public class AdminService {
     public Patient requirePatient(Long patientId) {
         return patientRepository.findById(patientId)
                 .orElseThrow(() -> new IllegalArgumentException("Patient not found."));
+    }
+
+    /** FR-025: the notification log — every confirmation, cancellation, reschedule, and reminder ever attempted. */
+    public List<NotificationResponse> listNotifications() {
+        return notificationRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(NotificationResponse::new)
+                .collect(Collectors.toList());
     }
 }
