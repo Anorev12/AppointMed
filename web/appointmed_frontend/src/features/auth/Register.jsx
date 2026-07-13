@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { formatTime12h } from "../../shared/utils/format";
 import "../../shared/styles/Appointmed.css";
 import { AuthAPI } from "./api/authApi";
 
@@ -157,7 +158,7 @@ export default function Register({ onRegister, onNavigateToLogin }) {
                   key={slot.time}
                   className={`am-slot-row${i === activeSlot ? " is-active" : ""}`}
                 >
-                  <span className="am-slot-time">{slot.time}</span>
+                  <span className="am-slot-time">{formatTime12h(slot.time)}</span>
                   <span className="am-slot-doctor">{slot.doctor}</span>
                   <span className={`am-slot-status ${slot.status}`}>
                     {slot.status === "open" ? "Open" : "Reserved"}
