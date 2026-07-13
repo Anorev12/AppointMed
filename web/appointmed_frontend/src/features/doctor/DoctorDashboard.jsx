@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import "../../shared/styles/Appointmed.css";
 import { AvailabilityAPI } from "./api/availabilityApi";
 import { DoctorAppointmentsAPI } from "./api/appointmentsApi";
+import { DoctorProfileAPI } from "./api/doctorProfileApi";
+import { formatTime12h } from "../../shared/utils/format";
 
 /**
  * AppointMed — Doctor Dashboard
@@ -48,6 +50,12 @@ export default function DoctorDashboard({ doctorName = "Dr. Reyes", onLogout }) 
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [dateActionError, setDateActionError] = useState("");
+
+  // ---- Change own password ----
+  const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     loadAvailability();
@@ -168,6 +176,32 @@ export default function DoctorDashboard({ doctorName = "Dr. Reyes", onLogout }) 
     }
   }
 
+  async function submitPasswordChange(ev) {
+    ev.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError("Fill in all fields.");
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("New password and confirmation don't match.");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await DoctorProfileAPI.changePassword(passwordForm);
+      setPasswordSuccess("Password updated successfully.");
+      setPasswordForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (err) {
+      setPasswordError(err.message || "Couldn't update your password.");
+    } finally {
+      setChangingPassword(false);
+    }
+  }
+
   return (
     <div className="db-shell">
       {/* ---------- Sidebar ---------- */}
@@ -190,6 +224,12 @@ export default function DoctorDashboard({ doctorName = "Dr. Reyes", onLogout }) 
           >
             Availability
           </button>
+          <button
+            className={`db-nav-item${view === "password" ? " is-active" : ""}`}
+            onClick={() => setView("password")}
+          >
+            Change Password
+          </button>
         </div>
 
         <div className="db-sidebar-foot">
@@ -211,18 +251,72 @@ export default function DoctorDashboard({ doctorName = "Dr. Reyes", onLogout }) 
         <div className="db-topbar">
           <div>
             <div className="db-topbar-title">
-              {view === "schedule" ? "My schedule" : "Manage availability"}
+              {view === "schedule" && "My schedule"}
+              {view === "availability" && "Manage availability"}
+              {view === "password" && "Change password"}
             </div>
             <div className="db-topbar-sub">
-              {view === "schedule"
-                ? "Your upcoming and recent appointments."
-                : "Set your working days, hours, and time off."}
+              {view === "schedule" && "Your upcoming and recent appointments."}
+              {view === "availability" && "Set your working days, hours, and time off."}
+              {view === "password" && "Update the password for your own account."}
             </div>
           </div>
         </div>
 
         <div className="db-content">
-          {/* ---------- SCHEDULE ---------- */}
+          {/* ---------- CHANGE PASSWORD ---------- */}
+          {view === "password" && (
+            <div className="db-panel" style={{ maxWidth: 480 }}>
+              <div className="db-panel-head">
+                <div className="db-panel-title">Change your password</div>
+              </div>
+              <div className="db-panel-body">
+                <form onSubmit={submitPasswordChange}>
+                  <div className="db-field">
+                    <label className="db-label">Current password</label>
+                    <input
+                      className="db-input"
+                      type="password"
+                      value={passwordForm.oldPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="db-field">
+                    <label className="db-label">New password</label>
+                    <input
+                      className="db-input"
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="db-field">
+                    <label className="db-label">Confirm new password</label>
+                    <input
+                      className="db-input"
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  {passwordError && (
+                    <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>{passwordError}</div>
+                  )}
+                  {passwordSuccess && (
+                    <div style={{ color: "var(--green)", fontSize: 13, marginBottom: 12 }}>{passwordSuccess}</div>
+                  )}
+
+                  <button className="db-btn primary" type="submit" disabled={changingPassword}>
+                    {changingPassword ? "Updating…" : "Update password"}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
           {view === "schedule" && (
             <>
               <div className="db-stats-grid">
@@ -290,7 +384,7 @@ export default function DoctorDashboard({ doctorName = "Dr. Reyes", onLogout }) 
                             <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
                             <td>{a.patientName}</td>
                             <td>{a.date}</td>
-                            <td>{a.time}</td>
+                            <td>{formatTime12h(a.time)}</td>
                             <td>
                               <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
                             </td>
@@ -350,7 +444,7 @@ export default function DoctorDashboard({ doctorName = "Dr. Reyes", onLogout }) 
                           <span style={{ width: 46 }}>{day}</span>
                           {workingDays[day] && (
                             <span style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>
-                              {hours.start} – {hours.end}
+                              {formatTime12h(hours.start)} – {formatTime12h(hours.end)}
                             </span>
                           )}
                         </div>
