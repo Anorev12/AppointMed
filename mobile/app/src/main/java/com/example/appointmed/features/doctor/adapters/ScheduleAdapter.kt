@@ -26,7 +26,7 @@ class ScheduleAdapter(
         val context = holder.binding.root.context
 
         holder.binding.tvPatientName.text = apt.patient
-        holder.binding.tvScheduleDateTime.text = "${apt.date} · ${apt.time}"
+        holder.binding.tvScheduleDateTime.text = "${apt.date} · ${com.example.appointmed.core.utils.formatTime12h(apt.time)}"
         holder.binding.tvScheduleRef.text = apt.id
         holder.binding.tvScheduleStatus.text = apt.status.replaceFirstChar { it.uppercase() }
 
@@ -49,3 +49,4 @@ class ScheduleAdapter(
 
     override fun getItemCount() = appointments.size
 }
+

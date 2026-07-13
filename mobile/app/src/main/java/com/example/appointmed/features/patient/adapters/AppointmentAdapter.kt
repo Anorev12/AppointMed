@@ -26,7 +26,7 @@ class AppointmentAdapter(
         val context = holder.binding.root.context
 
         holder.binding.tvAptDoctor.text = "${apt.doctor} · ${apt.specialization}"
-        holder.binding.tvAptDateTime.text = "${apt.date} · ${apt.time}"
+        holder.binding.tvAptDateTime.text = "${apt.date} · ${com.example.appointmed.core.utils.formatTime12h(apt.time)}"
         holder.binding.tvAptRef.text = apt.id
 
         val isConfirmed = apt.status == "confirmed"

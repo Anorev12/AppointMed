@@ -185,7 +185,7 @@ class HistoryFragment : Fragment() {
         var pickedDate = apt.date
         var pickedTime: String? = null
 
-        dialogBinding.tvRescheduleCurrent.text = "Currently: ${apt.doctor} · ${apt.date} · ${apt.time}"
+        dialogBinding.tvRescheduleCurrent.text = "Currently: ${apt.doctor} · ${apt.date} · ${com.example.appointmed.core.utils.formatTime12h(apt.time)}"
         dialogBinding.etRescheduleDate.setText(pickedDate)
         dialogBinding.rvRescheduleSlots.layoutManager = GridLayoutManager(requireContext(), 2)
 

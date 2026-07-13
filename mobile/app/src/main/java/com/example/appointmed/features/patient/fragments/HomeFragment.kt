@@ -85,7 +85,7 @@ class HomeFragment : Fragment() {
                         binding.tvEmptyAppointment.visibility = View.GONE
                         binding.nextAppointmentRow.visibility = View.VISIBLE
                         binding.tvNextDoctor.text = "${next.doctor} · ${next.specialization}"
-                        binding.tvNextDateTime.text = "${next.date} · ${next.time} · Ref ${next.id}"
+                        binding.tvNextDateTime.text = "${next.date} · ${com.example.appointmed.core.utils.formatTime12h(next.time)} · Ref ${next.id}"
                     }
 
                     binding.tvHomeLoading.visibility = View.GONE

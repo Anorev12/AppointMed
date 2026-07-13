@@ -27,13 +27,13 @@ class AdminAppointmentAdapter(
         holder.binding.tvAdminAptPatient.text = apt.patient
         holder.binding.tvAdminAptDoctor.text = apt.doctor
         holder.binding.tvAdminAptDoctor.visibility = if (showDoctorColumn) View.VISIBLE else View.GONE
-        holder.binding.tvAdminAptDateTime.text = "${apt.date} · ${apt.time}"
+        holder.binding.tvAdminAptDateTime.text = "${apt.date} · ${com.example.appointmed.core.utils.formatTime12h(apt.time)}"
         holder.binding.tvAdminAptRef.text = apt.id
         holder.binding.tvAdminAptStatus.text = apt.status.replaceFirstChar { it.uppercase() }
 
         val (bgColor, textColor) = when (apt.status) {
             "confirmed" -> R.color.success_soft to R.color.success
-            "pending" -> R.color.border to R.color.ink_soft
+            "completed" -> R.color.border to R.color.ink_soft
             else -> R.color.danger_soft to R.color.danger
         }
         holder.binding.tvAdminAptStatus.setBackgroundColor(ContextCompat.getColor(context, bgColor))

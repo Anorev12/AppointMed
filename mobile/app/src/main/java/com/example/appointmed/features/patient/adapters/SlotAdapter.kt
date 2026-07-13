@@ -25,7 +25,7 @@ class SlotAdapter(
         val context = holder.binding.root.context
         val btn = holder.binding.btnSlot
 
-        btn.text = slot.time
+        btn.text = com.example.appointmed.core.utils.formatTime12h(slot.time)
         btn.isEnabled = !slot.reserved
 
         when {
