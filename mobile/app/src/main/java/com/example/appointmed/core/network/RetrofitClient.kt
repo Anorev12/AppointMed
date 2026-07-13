@@ -1,7 +1,9 @@
 package com.example.appointmed.core.network
+
 import android.content.Context
 import com.example.appointmed.features.doctor.api.AvailabilityApiService
 import com.example.appointmed.features.doctor.api.DoctorAppointmentApiService
+import com.example.appointmed.features.doctor.api.DoctorProfileApiService
 import com.example.appointmed.features.auth.api.AuthApiService
 import com.example.appointmed.features.admin.api.AdminApiService
 import com.example.appointmed.features.patient.api.PatientApiService
@@ -54,6 +56,9 @@ object RetrofitClient {
     }
     fun getDoctorAppointmentApi(context: Context): DoctorAppointmentApiService {
         return getInstance(context).create(DoctorAppointmentApiService::class.java)
+    }
+    fun getDoctorProfileApi(context: Context): DoctorProfileApiService {
+        return getInstance(context).create(DoctorProfileApiService::class.java)
     }
     fun getAdminApi(context: Context): AdminApiService {
         return getInstance(context).create(AdminApiService::class.java)

@@ -6,6 +6,7 @@ import com.example.appointmed.features.patient.models.AppointmentRescheduleReque
 import com.example.appointmed.features.patient.models.DoctorApiResponse
 import com.example.appointmed.features.patient.models.PatientProfileResponse
 import com.example.appointmed.features.patient.models.PatientProfileUpdateRequest
+import com.example.appointmed.features.patient.models.PasswordChangeRequest
 import com.example.appointmed.features.patient.models.TimeSlot
 import retrofit2.Response
 import retrofit2.http.Body
@@ -50,4 +51,7 @@ interface PatientApiService {
 
     @PUT("api/patient/profile")
     suspend fun updateProfile(@Body request: PatientProfileUpdateRequest): Response<PatientProfileResponse>
+
+    @PUT("api/patient/profile/password")
+    suspend fun changePassword(@Body request: PasswordChangeRequest): Response<String>
 }

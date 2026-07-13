@@ -1,4 +1,6 @@
 package com.example.appointmed.features.patient.models
-
-class PasswordChangeRequest {
-}
+data class PasswordChangeRequest(
+    val oldPassword: String,
+    val newPassword: String,
+    val confirmPassword: String
+)

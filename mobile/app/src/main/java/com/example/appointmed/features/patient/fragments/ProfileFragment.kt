@@ -1,4 +1,5 @@
 package com.example.appointmed.features.patient.fragments
+import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -6,7 +7,9 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.example.appointmed.features.patient.DashboardActivity
+import com.example.appointmed.databinding.DialogChangePasswordBinding
 import com.example.appointmed.databinding.FragmentProfileBinding
+import com.example.appointmed.features.patient.models.PasswordChangeRequest
 import com.example.appointmed.features.patient.models.PatientProfileUpdateRequest
 import com.example.appointmed.core.network.RetrofitClient
 import kotlinx.coroutines.launch
@@ -31,11 +34,74 @@ class ProfileFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.btnSaveProfile.setOnClickListener { saveProfile() }
+        binding.btnChangePassword.setOnClickListener { showChangePasswordDialog() }
         binding.btnLogout.setOnClickListener {
             (requireActivity() as DashboardActivity).logout()
         }
 
         loadProfile()
+    }
+
+    private fun showChangePasswordDialog() {
+        val dialogBinding = DialogChangePasswordBinding.inflate(LayoutInflater.from(requireContext()))
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Change password")
+            .setView(dialogBinding.root)
+            .setPositiveButton("Update", null)
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                attemptChangePassword(dialogBinding, dialog)
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun attemptChangePassword(dialogBinding: DialogChangePasswordBinding, dialog: AlertDialog) {
+        dialogBinding.tvChangePasswordError.visibility = View.GONE
+
+        val oldPassword = dialogBinding.etOldPassword.text.toString()
+        val newPassword = dialogBinding.etNewPassword.text.toString()
+        val confirmPassword = dialogBinding.etConfirmPassword.text.toString()
+
+        if (oldPassword.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
+            showDialogError(dialogBinding, "Fill in all fields.")
+            return
+        }
+        if (newPassword != confirmPassword) {
+            showDialogError(dialogBinding, "New password and confirmation don't match.")
+            return
+        }
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.getPatientApi(requireContext())
+                    .changePassword(PasswordChangeRequest(oldPassword, newPassword, confirmPassword))
+
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
+
+                if (response.isSuccessful) {
+                    dialog.dismiss()
+                    showSaveMessage("Password updated successfully.")
+                } else {
+                    showDialogError(dialogBinding, response.errorBody()?.string() ?: "Couldn't update your password.")
+                }
+            } catch (e: Exception) {
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
+                showDialogError(dialogBinding, "Can't reach the server. Check that it's running and try again.")
+            }
+        }
+    }
+
+    private fun showDialogError(dialogBinding: DialogChangePasswordBinding, message: String) {
+        dialogBinding.tvChangePasswordError.text = message
+        dialogBinding.tvChangePasswordError.visibility = View.VISIBLE
     }
 
     private fun loadProfile() {
