@@ -34,7 +34,7 @@ public class DoctorController {
         try {
             requireAuth(authHeader);
             List<DoctorResponse> doctors = doctorService.listAll().stream()
-                    .map(d -> new DoctorResponse(d.getId(), d.getFullName(), d.getEmail(), d.getSpecialization(), d.getStatus()))
+                    .map(d -> new DoctorResponse(d.getId(), DoctorNameFormatter.format(d.getFullName()), d.getEmail(), d.getSpecialization(), d.getStatus()))
                     .toList();
             return ResponseEntity.ok(doctors);
         } catch (SecurityException e) {

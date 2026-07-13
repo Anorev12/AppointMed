@@ -1,6 +1,7 @@
 package edu.cit.Verona.AppointMed.appointmed_backend.features.notification;
 
 import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.entity.Appointment;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.DoctorNameFormatter;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.notification.entity.Notification;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.notification.repository.NotificationRepository;
 import org.slf4j.Logger;
@@ -39,7 +40,7 @@ public class NotificationService {
     public void notifyBookingConfirmation(Appointment a, String patientEmail) {
         String subject = "Appointment confirmed — " + a.getReference();
         String body = "Hi " + a.getPatientName() + ",\n\n"
-                + "Your appointment with " + a.getDoctorName() + " is confirmed for "
+                + "Your appointment with " + DoctorNameFormatter.format(a.getDoctorName()) + " is confirmed for "
                 + a.getDate().format(DATE_FMT) + " at " + a.getTime() + ".\n"
                 + "Reference number: " + a.getReference() + "\n\n"
                 + "— AppointMed";
@@ -58,7 +59,7 @@ public class NotificationService {
     public void notifyCancellation(Appointment a, String patientEmail, String cancelledBy) {
         String subject = "Appointment cancelled — " + a.getReference();
         String body = "Hi " + a.getPatientName() + ",\n\n"
-                + "Your appointment with " + a.getDoctorName() + " on " + a.getDate().format(DATE_FMT)
+                + "Your appointment with " + DoctorNameFormatter.format(a.getDoctorName()) + " on " + a.getDate().format(DATE_FMT)
                 + " at " + a.getTime() + " has been cancelled by " + cancelledBy + ".\n"
                 + "Reference number: " + a.getReference() + "\n\n"
                 + "If this wasn't expected, please contact the clinic directly.\n\n"
@@ -69,7 +70,7 @@ public class NotificationService {
     public void notifyReschedule(Appointment a, String patientEmail, String oldDate, String oldTime) {
         String subject = "Appointment rescheduled — " + a.getReference();
         String body = "Hi " + a.getPatientName() + ",\n\n"
-                + "Your appointment with " + a.getDoctorName() + " has been moved from "
+                + "Your appointment with " + DoctorNameFormatter.format(a.getDoctorName()) + " has been moved from "
                 + oldDate + " " + oldTime + " to " + a.getDate().format(DATE_FMT) + " at " + a.getTime() + ".\n"
                 + "Reference number: " + a.getReference() + "\n\n"
                 + "— AppointMed";
@@ -79,7 +80,7 @@ public class NotificationService {
     public void notifyScheduleChange(Appointment a, String patientEmail) {
         String subject = "Schedule change affecting your appointment — " + a.getReference();
         String body = "Hi " + a.getPatientName() + ",\n\n"
-                + "Dr. " + a.getDoctorName() + " has become unavailable on " + a.getDate().format(DATE_FMT)
+                + DoctorNameFormatter.format(a.getDoctorName()) + " has become unavailable on " + a.getDate().format(DATE_FMT)
                 + ", which is the date of your appointment at " + a.getTime() + " (Reference: " + a.getReference() + ").\n"
                 + "The clinic will contact you shortly to reschedule. We apologize for the inconvenience.\n\n"
                 + "— AppointMed";
@@ -89,7 +90,7 @@ public class NotificationService {
     public void notifyReminder(Appointment a, String patientEmail, String windowLabel) {
         String subject = "Reminder: appointment " + windowLabel + " — " + a.getReference();
         String body = "Hi " + a.getPatientName() + ",\n\n"
-                + "This is a reminder that you have an appointment with " + a.getDoctorName() + " "
+                + "This is a reminder that you have an appointment with " + DoctorNameFormatter.format(a.getDoctorName()) + " "
                 + windowLabel + ", on " + a.getDate().format(DATE_FMT) + " at " + a.getTime() + ".\n"
                 + "Reference number: " + a.getReference() + "\n\n"
                 + "— AppointMed";

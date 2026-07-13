@@ -3,6 +3,7 @@ package edu.cit.Verona.AppointMed.appointmed_backend.features.auth;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.auth.dto.AuthResponse;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.auth.dto.LoginRequest;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.entity.Admin;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.DoctorNameFormatter;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.entity.Doctor;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.entity.Patient;
 import edu.cit.Verona.AppointMed.appointmed_backend.Security.JwtUtil;
@@ -64,7 +65,7 @@ public class AuthController {
                 Doctor doctor = doctorService.login(email, request.getPassword());
                 String token = jwtUtil.generateToken(doctor.getId(), doctor.getEmail(), "DOCTOR");
                 return ResponseEntity.ok(new AuthResponse(
-                        doctor.getId(), doctor.getFullName(), doctor.getEmail(), "DOCTOR", token
+                        doctor.getId(), DoctorNameFormatter.format(doctor.getFullName()), doctor.getEmail(), "DOCTOR", token
                 ));
             }
 
@@ -119,7 +120,7 @@ public class AuthController {
             switch (role) {
                 case "DOCTOR" -> {
                     var doctor = doctorLookup(email);
-                    return ResponseEntity.ok(new AuthResponse(id, doctor, email, role, token));
+                    return ResponseEntity.ok(new AuthResponse(id, DoctorNameFormatter.format(doctor), email, role, token));
                 }
                 case "ADMIN" -> {
                     var admin = adminLookup(email);
