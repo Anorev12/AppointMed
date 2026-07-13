@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import "../../shared/styles/Appointmed.css";
 import { AdminAPI } from "./api/adminApi";
+import { formatTime12h } from "../../shared/utils/format";
 
 /**
  * AppointMed — Admin Dashboard
@@ -8,13 +9,22 @@ import { AdminAPI } from "./api/adminApi";
  * and FR-016 (override any appointment).
  *
  * Fully wired to the backend:
- *  - GET  /api/admin/patients                    (patient roster)
- *  - GET  /api/admin/patients/{id}/appointments   (per-patient history)
- *  - GET  /api/admin/doctors                      (doctor roster + status)
- *  - PUT  /api/admin/doctors/{id}/status          (mark active / on leave)
- *  - POST /api/admin/doctors                      (create doctor account)
- *  - GET  /api/admin/appointments                 (clinic-wide appointments)
- *  - PUT  /api/admin/appointments/{id}/cancel     (override cancel)
+ *  - GET    /api/admin/patients                    (patient roster, ?search=)
+ *  - POST   /api/admin/patients                     (create patient account)
+ *  - DELETE /api/admin/patients/{id}                (delete patient account)
+ *  - GET    /api/admin/patients/{id}/appointments   (per-patient history)
+ *  - GET    /api/admin/doctors                      (doctor roster + status, ?search=)
+ *  - POST   /api/admin/doctors                      (create doctor account)
+ *  - PUT    /api/admin/doctors/{id}/status          (mark active / on leave)
+ *  - DELETE /api/admin/doctors/{id}                 (delete doctor account)
+ *  - GET    /api/admin/admins                        (admin roster — no delete action exists)
+ *  - POST   /api/admin/admins                        (create another admin account)
+ *  - PUT    /api/admin/password                      (change the logged-in admin's own password)
+ *  - GET    /api/admin/appointments                 (clinic-wide appointments)
+ *  - PUT    /api/admin/appointments/{id}/cancel     (override cancel)
+ *
+ * Business rule: there is no delete button, and no backend endpoint, for
+ * removing an admin account — admins can only ever change their own password.
  */
 
 function todayStr() {
@@ -22,19 +32,26 @@ function todayStr() {
 }
 
 export default function AdminDashboard({ adminName = "Admin", onLogout }) {
-  const [view, setView] = useState("overview"); // overview | patients | doctors | appointments
+  const [view, setView] = useState("overview"); // overview | patients | doctors | admins | appointments | password
   const [search, setSearch] = useState("");
 
   // ---- Patients ----
   const [patients, setPatients] = useState([]);
   const [patientsLoading, setPatientsLoading] = useState(true);
   const [patientsError, setPatientsError] = useState("");
+  const [deletingPatientId, setDeletingPatientId] = useState(null);
 
   // ---- Doctors ----
   const [doctors, setDoctors] = useState([]);
   const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [doctorsError, setDoctorsError] = useState("");
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
+  const [deletingDoctorId, setDeletingDoctorId] = useState(null);
+
+  // ---- Admins ----
+  const [admins, setAdmins] = useState([]);
+  const [adminsLoading, setAdminsLoading] = useState(true);
+  const [adminsError, setAdminsError] = useState("");
 
   // ---- Appointments ----
   const [appointments, setAppointments] = useState([]);
@@ -47,6 +64,24 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
   const [newDoctor, setNewDoctor] = useState({ fullName: "", email: "", password: "", specialization: "" });
   const [addDoctorError, setAddDoctorError] = useState("");
   const [addingDoctor, setAddingDoctor] = useState(false);
+
+  // ---- Add patient form ----
+  const [showAddPatient, setShowAddPatient] = useState(false);
+  const [newPatient, setNewPatient] = useState({ fullName: "", email: "", password: "", contactNumber: "" });
+  const [addPatientError, setAddPatientError] = useState("");
+  const [addingPatient, setAddingPatient] = useState(false);
+
+  // ---- Add admin form ----
+  const [showAddAdmin, setShowAddAdmin] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({ fullName: "", email: "", password: "" });
+  const [addAdminError, setAddAdminError] = useState("");
+  const [addingAdmin, setAddingAdmin] = useState(false);
+
+  // ---- Change own password ----
+  const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // ---- View history modal ----
   const [historyPatient, setHistoryPatient] = useState(null); // { id, fullName } | null
@@ -80,6 +115,19 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
     }
   }, []);
 
+  const loadAdmins = useCallback(async () => {
+    setAdminsLoading(true);
+    setAdminsError("");
+    try {
+      const data = await AdminAPI.listAdmins();
+      setAdmins(data);
+    } catch (err) {
+      setAdminsError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't load admins.");
+    } finally {
+      setAdminsLoading(false);
+    }
+  }, []);
+
   const loadAppointments = useCallback(async () => {
     setApptsLoading(true);
     setApptsError("");
@@ -96,17 +144,21 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
   useEffect(() => {
     loadPatients();
     loadDoctors();
+    loadAdmins();
     loadAppointments();
-  }, [loadPatients, loadDoctors, loadAppointments]);
+  }, [loadPatients, loadDoctors, loadAdmins, loadAppointments]);
 
   const todayCount = appointments.filter((a) => a.date === todayStr() && a.status !== "CANCELLED").length;
   const completedCount = appointments.filter((a) => a.status === "COMPLETED").length;
 
   const filteredPatients = patients.filter((p) =>
-    p.fullName.toLowerCase().includes(search.toLowerCase())
+    p.fullName.toLowerCase().includes(search.toLowerCase()) || p.email.toLowerCase().includes(search.toLowerCase())
   );
   const filteredDoctors = doctors.filter((d) =>
-    d.fullName.toLowerCase().includes(search.toLowerCase())
+    d.fullName.toLowerCase().includes(search.toLowerCase()) || d.email.toLowerCase().includes(search.toLowerCase())
+  );
+  const filteredAdmins = admins.filter((a) =>
+    a.fullName.toLowerCase().includes(search.toLowerCase()) || a.email.toLowerCase().includes(search.toLowerCase())
   );
   const filteredAppointments = appointments.filter(
     (a) =>
@@ -152,6 +204,110 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
       }
     } finally {
       setAddingDoctor(false);
+    }
+  }
+
+  async function deleteDoctor(doctor) {
+    if (!window.confirm(`Delete ${doctor.fullName}'s account? This can't be undone.`)) return;
+    setDeletingDoctorId(doctor.id);
+    setDoctorsError("");
+    try {
+      await AdminAPI.deleteDoctor(doctor.id);
+      setDoctors((prev) => prev.filter((d) => d.id !== doctor.id));
+    } catch (err) {
+      setDoctorsError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't delete that doctor.");
+    } finally {
+      setDeletingDoctorId(null);
+    }
+  }
+
+  async function createPatient(ev) {
+    ev.preventDefault();
+    setAddPatientError("");
+    setAddingPatient(true);
+    try {
+      const data = await AdminAPI.createPatient(newPatient);
+      setPatients((prev) => [...prev, data]);
+      setNewPatient({ fullName: "", email: "", password: "", contactNumber: "" });
+      setShowAddPatient(false);
+    } catch (err) {
+      if (err.status === undefined) {
+        setAddPatientError("Can't reach the server. Check that it's running and try again.");
+      } else {
+        setAddPatientError(err.data?.message || err.message || "Couldn't create patient account.");
+      }
+    } finally {
+      setAddingPatient(false);
+    }
+  }
+
+  async function deletePatient(patient) {
+    if (!window.confirm(`Delete ${patient.fullName}'s account? This can't be undone.`)) return;
+    setDeletingPatientId(patient.id);
+    setPatientsError("");
+    try {
+      await AdminAPI.deletePatient(patient.id);
+      setPatients((prev) => prev.filter((p) => p.id !== patient.id));
+    } catch (err) {
+      setPatientsError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't delete that patient.");
+    } finally {
+      setDeletingPatientId(null);
+    }
+  }
+
+  async function createAdmin(ev) {
+    ev.preventDefault();
+    setAddAdminError("");
+
+    if (!newAdmin.email.toLowerCase().endsWith("@appointmedadmin.com")) {
+      setAddAdminError("Admin email must end in @appointmedadmin.com");
+      return;
+    }
+
+    setAddingAdmin(true);
+    try {
+      const data = await AdminAPI.createAdmin(newAdmin);
+      setAdmins((prev) => [...prev, data]);
+      setNewAdmin({ fullName: "", email: "", password: "" });
+      setShowAddAdmin(false);
+    } catch (err) {
+      if (err.status === undefined) {
+        setAddAdminError("Can't reach the server. Check that it's running and try again.");
+      } else {
+        setAddAdminError(err.data?.message || err.message || "Couldn't create admin account.");
+      }
+    } finally {
+      setAddingAdmin(false);
+    }
+  }
+
+  async function submitPasswordChange(ev) {
+    ev.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError("Fill in all fields.");
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("New password and confirmation don't match.");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await AdminAPI.changeOwnPassword(passwordForm);
+      setPasswordSuccess("Password updated successfully.");
+      setPasswordForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (err) {
+      if (err.status === undefined) {
+        setPasswordError("Can't reach the server. Check that it's running and try again.");
+      } else {
+        setPasswordError(err.data?.message || err.message || "Couldn't update your password.");
+      }
+    } finally {
+      setChangingPassword(false);
     }
   }
 
@@ -223,6 +379,18 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
           >
             Doctors
           </button>
+          <button
+            className={`db-nav-item${view === "admins" ? " is-active" : ""}`}
+            onClick={() => setView("admins")}
+          >
+            Admins
+          </button>
+          <button
+            className={`db-nav-item${view === "password" ? " is-active" : ""}`}
+            onClick={() => setView("password")}
+          >
+            Change Password
+          </button>
         </div>
 
         <div className="db-sidebar-foot">
@@ -248,16 +416,20 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
               {view === "appointments" && "All appointments"}
               {view === "patients" && "Patients"}
               {view === "doctors" && "Doctors"}
+              {view === "admins" && "Admins"}
+              {view === "password" && "Change password"}
             </div>
             <div className="db-topbar-sub">
               {view === "overview" && "Today's snapshot across the clinic."}
               {view === "appointments" && "Manage and override any appointment."}
               {view === "patients" && "Registered patient accounts."}
               {view === "doctors" && "Manage doctor profiles and availability."}
+              {view === "admins" && "Administrator accounts. Admins can't be deleted here — only created."}
+              {view === "password" && "Update the password for your own account."}
             </div>
           </div>
 
-          {view !== "overview" && (
+          {["appointments", "patients", "doctors", "admins"].includes(view) && (
             <div className="db-search">
               <span>⌕</span>
               <input
@@ -325,7 +497,7 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
                             <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
                             <td>{a.patientName}</td>
                             <td>{a.doctorName}</td>
-                            <td>{a.date} · {a.time}</td>
+                            <td>{a.date} · {formatTime12h(a.time)}</td>
                             <td>
                               <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
                             </td>
@@ -370,7 +542,7 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
                           <td>{a.patientName}</td>
                           <td>{a.doctorName}</td>
                           <td>{a.date}</td>
-                          <td>{a.time}</td>
+                          <td>{formatTime12h(a.time)}</td>
                           <td>
                             <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
                           </td>
@@ -396,43 +568,129 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
 
           {/* ---------- PATIENTS ---------- */}
           {view === "patients" && (
-            <div className="db-panel">
-              {patientsError && (
-                <div style={{ color: "var(--alert)", fontSize: 13, padding: "12px 20px 0" }}>{patientsError}</div>
+            <>
+              {showAddPatient && (
+                <div className="db-panel" style={{ maxWidth: 480 }}>
+                  <div className="db-panel-head">
+                    <div className="db-panel-title">Add patient account</div>
+                  </div>
+                  <div className="db-panel-body">
+                    <form onSubmit={createPatient}>
+                      <div className="db-field">
+                        <label className="db-label">Full name</label>
+                        <input
+                          className="db-input"
+                          value={newPatient.fullName}
+                          onChange={(e) => setNewPatient({ ...newPatient, fullName: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="db-field">
+                        <label className="db-label">Email</label>
+                        <input
+                          className="db-input"
+                          type="email"
+                          value={newPatient.email}
+                          onChange={(e) => setNewPatient({ ...newPatient, email: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="db-field">
+                        <label className="db-label">Temporary password</label>
+                        <input
+                          className="db-input"
+                          type="password"
+                          value={newPatient.password}
+                          onChange={(e) => setNewPatient({ ...newPatient, password: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="db-field">
+                        <label className="db-label">Contact number</label>
+                        <input
+                          className="db-input"
+                          value={newPatient.contactNumber}
+                          onChange={(e) => setNewPatient({ ...newPatient, contactNumber: e.target.value })}
+                        />
+                      </div>
+
+                      {addPatientError && (
+                        <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>
+                          {addPatientError}
+                        </div>
+                      )}
+
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button className="db-btn primary" type="submit" disabled={addingPatient}>
+                          {addingPatient ? "Creating…" : "Create patient account"}
+                        </button>
+                        <button
+                          type="button"
+                          className="db-btn outline"
+                          onClick={() => {
+                            setShowAddPatient(false);
+                            setAddPatientError("");
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
               )}
-              <div className="db-panel-body no-pad">
-                {patientsLoading ? (
-                  <div className="db-empty">Loading patients…</div>
-                ) : filteredPatients.length === 0 ? (
-                  <div className="db-empty">No patients found.</div>
-                ) : (
-                  <table className="db-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Contact</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredPatients.map((p) => (
-                        <tr key={p.id}>
-                          <td>{p.fullName}</td>
-                          <td>{p.email}</td>
-                          <td>{p.contactNumber || "—"}</td>
-                          <td>
-                            <button className="db-btn outline sm" onClick={() => openHistory(p)}>
-                              View history
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+
+              <div className="db-panel">
+                <div className="db-panel-head">
+                  <div className="db-panel-title">All patients</div>
+                  <button className="db-btn primary sm" onClick={() => setShowAddPatient(true)}>
+                    + Add patient
+                  </button>
+                </div>
+                {patientsError && (
+                  <div style={{ color: "var(--alert)", fontSize: 13, padding: "0 20px 12px" }}>{patientsError}</div>
                 )}
+                <div className="db-panel-body no-pad">
+                  {patientsLoading ? (
+                    <div className="db-empty">Loading patients…</div>
+                  ) : filteredPatients.length === 0 ? (
+                    <div className="db-empty">No patients found.</div>
+                  ) : (
+                    <table className="db-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Email</th>
+                          <th>Contact</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPatients.map((p) => (
+                          <tr key={p.id}>
+                            <td>{p.fullName}</td>
+                            <td>{p.email}</td>
+                            <td>{p.contactNumber || "—"}</td>
+                            <td style={{ display: "flex", gap: 8 }}>
+                              <button className="db-btn outline sm" onClick={() => openHistory(p)}>
+                                View history
+                              </button>
+                              <button
+                                className="db-btn danger sm"
+                                disabled={deletingPatientId === p.id}
+                                onClick={() => deletePatient(p)}
+                              >
+                                {deletingPatientId === p.id ? "Deleting…" : "Delete"}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           {/* ---------- DOCTORS ---------- */}
@@ -548,7 +806,7 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
                                   {isActive ? "active" : "on leave"}
                                 </span>
                               </td>
-                              <td>
+                              <td style={{ display: "flex", gap: 8 }}>
                                 <button
                                   className="db-btn outline sm"
                                   disabled={statusUpdatingId === d.id}
@@ -560,6 +818,13 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
                                     ? "Mark on leave"
                                     : "Mark active"}
                                 </button>
+                                <button
+                                  className="db-btn danger sm"
+                                  disabled={deletingDoctorId === d.id}
+                                  onClick={() => deleteDoctor(d)}
+                                >
+                                  {deletingDoctorId === d.id ? "Deleting…" : "Delete"}
+                                </button>
                               </td>
                             </tr>
                           );
@@ -570,6 +835,165 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
                 </div>
               </div>
             </>
+          )}
+
+          {/* ---------- ADMINS ---------- */}
+          {view === "admins" && (
+            <>
+              {showAddAdmin && (
+                <div className="db-panel" style={{ maxWidth: 480 }}>
+                  <div className="db-panel-head">
+                    <div className="db-panel-title">Add admin account</div>
+                  </div>
+                  <div className="db-panel-body">
+                    <form onSubmit={createAdmin}>
+                      <div className="db-field">
+                        <label className="db-label">Full name</label>
+                        <input
+                          className="db-input"
+                          value={newAdmin.fullName}
+                          onChange={(e) => setNewAdmin({ ...newAdmin, fullName: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="db-field">
+                        <label className="db-label">Email (must end in @appointmedadmin.com)</label>
+                        <input
+                          className="db-input"
+                          type="email"
+                          placeholder="name@appointmedadmin.com"
+                          value={newAdmin.email}
+                          onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="db-field">
+                        <label className="db-label">Temporary password</label>
+                        <input
+                          className="db-input"
+                          type="password"
+                          value={newAdmin.password}
+                          onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                          required
+                        />
+                      </div>
+
+                      {addAdminError && (
+                        <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>
+                          {addAdminError}
+                        </div>
+                      )}
+
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button className="db-btn primary" type="submit" disabled={addingAdmin}>
+                          {addingAdmin ? "Creating…" : "Create admin account"}
+                        </button>
+                        <button
+                          type="button"
+                          className="db-btn outline"
+                          onClick={() => {
+                            setShowAddAdmin(false);
+                            setAddAdminError("");
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              <div className="db-panel">
+                <div className="db-panel-head">
+                  <div className="db-panel-title">All admins</div>
+                  <button className="db-btn primary sm" onClick={() => setShowAddAdmin(true)}>
+                    + Add admin
+                  </button>
+                </div>
+                {adminsError && (
+                  <div style={{ color: "var(--alert)", fontSize: 13, padding: "0 20px 12px" }}>{adminsError}</div>
+                )}
+                <div className="db-panel-body no-pad">
+                  {adminsLoading ? (
+                    <div className="db-empty">Loading admins…</div>
+                  ) : filteredAdmins.length === 0 ? (
+                    <div className="db-empty">No admins found.</div>
+                  ) : (
+                    <table className="db-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Email</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredAdmins.map((a) => (
+                          <tr key={a.id}>
+                            <td>{a.fullName}</td>
+                            <td>{a.email}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ---------- CHANGE PASSWORD ---------- */}
+          {view === "password" && (
+            <div className="db-panel" style={{ maxWidth: 480 }}>
+              <div className="db-panel-head">
+                <div className="db-panel-title">Change your password</div>
+              </div>
+              <div className="db-panel-body">
+                <form onSubmit={submitPasswordChange}>
+                  <div className="db-field">
+                    <label className="db-label">Current password</label>
+                    <input
+                      className="db-input"
+                      type="password"
+                      value={passwordForm.oldPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="db-field">
+                    <label className="db-label">New password</label>
+                    <input
+                      className="db-input"
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="db-field">
+                    <label className="db-label">Confirm new password</label>
+                    <input
+                      className="db-input"
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  {passwordError && (
+                    <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>{passwordError}</div>
+                  )}
+                  {passwordSuccess && (
+                    <div style={{ color: "var(--green)", fontSize: 13, marginBottom: 12 }}>{passwordSuccess}</div>
+                  )}
+
+                  <button className="db-btn primary" type="submit" disabled={changingPassword}>
+                    {changingPassword ? "Updating…" : "Update password"}
+                  </button>
+                </form>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -602,7 +1026,7 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
                     <tr key={a.id}>
                       <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
                       <td>{a.doctorName}</td>
-                      <td>{a.date} · {a.time}</td>
+                      <td>{a.date} · {formatTime12h(a.time)}</td>
                       <td>
                         <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
                       </td>
