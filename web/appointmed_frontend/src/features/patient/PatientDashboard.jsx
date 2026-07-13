@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import "../../shared/styles/Appointmed.css";
 import { DoctorsAPI, AppointmentsAPI, PatientProfileAPI } from "./api/patientApi";
+import { formatTime12h } from "../../shared/utils/format";
 
 /**
  * AppointMed — Patient Dashboard
@@ -390,9 +391,9 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                     <div className="db-empty">You have no upcoming appointments.</div>
                   ) : (
                     <div className="db-row" key={nextAppointment.id}>
-                      <div className="db-row-time">{nextAppointment.time}</div>
+                      <div className="db-row-time">{formatTime12h(nextAppointment.time)}</div>
                       <div className="db-row-avatar">
-                        {nextAppointment.doctorName?.split(" ")[1]?.[0] || "D"}
+                        {nextAppointment.doctorName?.trim().split(" ").pop()?.[0] || "D"}
                       </div>
                       <div className="db-row-main">
                         <div className="db-row-title">{nextAppointment.doctorName} · {nextAppointment.specialization}</div>
@@ -469,7 +470,7 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                               }`}
                               onClick={() => setSelectedSlot(slot.time)}
                             >
-                              {slot.time}
+                              {formatTime12h(slot.time)}
                             </button>
                           ))}
                         </div>
@@ -489,7 +490,7 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                       <div className="db-confirm-code">{confirmedAppt.reference}</div>
                       <div style={{ fontWeight: 600, marginBottom: 6 }}>Booking confirmed</div>
                       <div style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 14 }}>
-                        {confirmedAppt.doctorName} · {confirmedAppt.date} at {confirmedAppt.time}
+                        {confirmedAppt.doctorName} · {confirmedAppt.date} at {formatTime12h(confirmedAppt.time)}
                       </div>
                       <button className="db-btn primary sm" onClick={resetBooking}>
                         View my appointments
@@ -586,7 +587,7 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                           <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
                           <td>{a.doctorName} <span style={{ color: "var(--ink-soft)" }}>· {a.specialization}</span></td>
                           <td>{a.date}</td>
-                          <td>{a.time}</td>
+                          <td>{formatTime12h(a.time)}</td>
                           <td>
                             <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
                           </td>
@@ -682,7 +683,7 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
           <div className="db-modal" onClick={(e) => e.stopPropagation()}>
             <div className="db-modal-title">Reschedule appointment</div>
             <div className="db-modal-sub">
-              Currently: {reschedulingAppt.doctorName} · {reschedulingAppt.date} · {reschedulingAppt.time}
+              Currently: {reschedulingAppt.doctorName} · {reschedulingAppt.date} · {formatTime12h(reschedulingAppt.time)}
             </div>
 
             <div className="db-field">
@@ -719,7 +720,7 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                     }`}
                     onClick={() => setRescheduleSlot(slot.time)}
                   >
-                    {slot.time}
+                    {formatTime12h(slot.time)}
                   </button>
                 ))}
               </div>
