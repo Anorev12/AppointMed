@@ -8,11 +8,14 @@ import java.time.LocalTime;
 import java.util.List;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
-    List<Appointment> findByPatientIdOrderByDateDescTimeDesc(Long patientId);
+    // Ascending chronological order (nearest date/time first) everywhere —
+    // every appointment list in the app (admin, doctor, patient, history,
+    // dashboard) should read in this order per the app-wide sorting rule.
+    List<Appointment> findByPatientIdOrderByDateAscTimeAsc(Long patientId);
 
-    List<Appointment> findByDoctorIdOrderByDateDescTimeDesc(Long doctorId);
+    List<Appointment> findByDoctorIdOrderByDateAscTimeAsc(Long doctorId);
 
-    List<Appointment> findAllByOrderByDateDescTimeDesc();
+    List<Appointment> findAllByOrderByDateAscTimeAsc();
 
     List<Appointment> findByStatus(String status);
 
@@ -20,3 +23,4 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     boolean existsByDoctorIdAndDateAndTimeAndStatus(Long doctorId, LocalDate date, LocalTime time, String status);
 }
+

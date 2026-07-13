@@ -10,6 +10,7 @@ import edu.cit.Verona.AppointMed.appointmed_backend.features.availability.Availa
 import edu.cit.Verona.AppointMed.appointmed_backend.features.availability.dto.AvailabilityResponse;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.entity.Doctor;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.repository.DoctorRepository;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.DoctorNameFormatter;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.notification.NotificationService;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.entity.Patient;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.repository.PatientRepository;
@@ -119,7 +120,7 @@ public class AppointmentService {
      * @param to      optional inclusive upper bound on appointment date (yyyy-MM-dd)
      */
     public List<AppointmentResponse> listForPatient(Long patientId, String status, String keyword, String from, String to) {
-        List<Appointment> appointments = appointmentRepository.findByPatientIdOrderByDateDescTimeDesc(patientId);
+        List<Appointment> appointments = appointmentRepository.findByPatientIdOrderByDateAscTimeAsc(patientId);
         return applyFilters(appointments, status, keyword, from, to).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -136,7 +137,7 @@ public class AppointmentService {
      * a patient browsing their own history) needs to search across patients.
      */
     public List<AppointmentResponse> listAll(String status, String keyword, String from, String to) {
-        List<Appointment> appointments = appointmentRepository.findAllByOrderByDateDescTimeDesc();
+        List<Appointment> appointments = appointmentRepository.findAllByOrderByDateAscTimeAsc();
 
         LocalDate fromDate = (from == null || from.isBlank()) ? null : parseDate(from);
         LocalDate toDate = (to == null || to.isBlank()) ? null : parseDate(to);
@@ -173,7 +174,7 @@ public class AppointmentService {
     }
 
     public List<AppointmentResponse> listForDoctor(Long doctorId) {
-        return appointmentRepository.findByDoctorIdOrderByDateDescTimeDesc(doctorId)
+        return appointmentRepository.findByDoctorIdOrderByDateAscTimeAsc(doctorId)
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -403,7 +404,7 @@ public class AppointmentService {
                 a.getId(),
                 a.getReference(),
                 a.getDoctorId(),
-                a.getDoctorName(),
+                DoctorNameFormatter.format(a.getDoctorName()),
                 a.getSpecialization(),
                 a.getPatientName(),
                 a.getDate().toString(),
