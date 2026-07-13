@@ -50,6 +50,23 @@ public class PatientProfileController {
         }
     }
 
+    /** Patient changes their own password — requires the current password and a confirmed new one. */
+    @PutMapping("/password")
+    public ResponseEntity<?> changePassword(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody edu.cit.Verona.AppointMed.appointmed_backend.features.patient.dto.PasswordChangeRequest request
+    ) {
+        try {
+            Long patientId = requirePatient(authHeader);
+            patientService.changePassword(patientId, request);
+            return ResponseEntity.ok("Password updated successfully.");
+        } catch (SecurityException e) {
+            return ResponseEntity.status(401).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     /** Validates the bearer token and confirms the caller is a patient. Returns their id. */
     private Long requirePatient(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {

@@ -64,4 +64,27 @@ public class DoctorService {
     public java.util.List<Doctor> listAll() {
         return doctorRepository.findAll();
     }
+
+    /**
+     * Doctor-initiated password change — requires the current password to
+     * be supplied and correct, and the new password to be confirmed, before
+     * anything is written. Matches PatientService/AdminService's changePassword shape.
+     */
+    public void changePassword(Long id, edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.dto.PasswordChangeRequest request) {
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Doctor not found."));
+
+        if (request.getOldPassword() == null || !doctor.getPassword().equals(request.getOldPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect.");
+        }
+        if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
+            throw new IllegalArgumentException("New password can't be empty.");
+        }
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new IllegalArgumentException("New password and confirmation don't match.");
+        }
+
+        doctor.setPassword(request.getNewPassword());
+        doctorRepository.save(doctor);
+    }
 }

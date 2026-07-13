@@ -93,4 +93,28 @@ public class PatientService {
                 patient.getMedicalHistory()
         );
     }
+
+    /**
+     * Patient-initiated password change — requires the current password to
+     * be supplied and correct, and the new password to be confirmed, before
+     * anything is written. Matches the same validation shape used by
+     * DoctorService and AdminService's changePassword.
+     */
+    public void changePassword(Long id, edu.cit.Verona.AppointMed.appointmed_backend.features.patient.dto.PasswordChangeRequest request) {
+        Patient patient = patientRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found."));
+
+        if (request.getOldPassword() == null || !patient.getPassword().equals(request.getOldPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect.");
+        }
+        if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
+            throw new IllegalArgumentException("New password can't be empty.");
+        }
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new IllegalArgumentException("New password and confirmation don't match.");
+        }
+
+        patient.setPassword(request.getNewPassword());
+        patientRepository.save(patient);
+    }
 }
