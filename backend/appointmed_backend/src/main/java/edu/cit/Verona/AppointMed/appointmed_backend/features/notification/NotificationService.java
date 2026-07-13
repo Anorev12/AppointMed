@@ -4,16 +4,37 @@ import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.entity.
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.DoctorNameFormatter;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.notification.entity.Notification;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.notification.repository.NotificationRepository;
+import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 import java.time.format.DateTimeFormatter;
 
+/**
+ * FR-013, FR-020, FR-021, FR-022, FR-023, FR-025, FR-026, FR-027.
+ *
+ * Every notification — sent or not — gets logged as a Notification row
+ * (FR-025). Real email delivery is gated behind notification.email.enabled
+ * (application.properties), off by default: with it off, this still writes
+ * a "LOGGED" row for every event so the feature is fully demonstrable
+ * without needing real SMTP credentials configured. Flip it on and it
+ * sends through whatever spring.mail.* JavaMailSender is configured.
+ *
+ * Every notification type is now sent as a styled HTML email, rendered
+ * via the TemplateEngine bean spring-boot-starter-thymeleaf already
+ * auto-configures (same dependency used for the web view layer, just
+ * pointed at templates under templates/email/). Each has a matching
+ * renderXxxHtml() method below that builds the Context and calls
+ * templateEngine.process(...) — follow that same pattern for any new
+ * notification type added later.
+ */
 @Service
 public class NotificationService {
 
@@ -21,6 +42,7 @@ public class NotificationService {
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("MMM d, yyyy");
 
     private final NotificationRepository notificationRepository;
+    private final TemplateEngine templateEngine;
 
     @Autowired(required = false)
     private JavaMailSender mailSender;
@@ -33,73 +55,206 @@ public class NotificationService {
 
     private static final int MAX_ATTEMPTS = 3; // FR-026
 
-    public NotificationService(NotificationRepository notificationRepository) {
+    public NotificationService(NotificationRepository notificationRepository, TemplateEngine templateEngine) {
         this.notificationRepository = notificationRepository;
+        this.templateEngine = templateEngine;
     }
 
+    /** FR-013 / FR-021: sent to the patient the moment a booking is confirmed — the one HTML-styled email so far. */
     public void notifyBookingConfirmation(Appointment a, String patientEmail) {
+        String doctorName = DoctorNameFormatter.format(a.getDoctorName());
+        String date = a.getDate().format(DATE_FMT);
+        String time = NotificationTimeFormatter.format(a.getTime());
+
         String subject = "Appointment confirmed — " + a.getReference();
-        String body = "Hi " + a.getPatientName() + ",\n\n"
-                + "Your appointment with " + DoctorNameFormatter.format(a.getDoctorName()) + " is confirmed for "
-                + a.getDate().format(DATE_FMT) + " at " + a.getTime() + ".\n"
+
+        // Plain-text fallback for the notification log and for mail clients that can't render HTML.
+        String plainBody = "Hi " + a.getPatientName() + ",\n\n"
+                + "Your appointment with " + doctorName + " is confirmed for " + date + " at " + time + ".\n"
                 + "Reference number: " + a.getReference() + "\n\n"
                 + "— AppointMed";
-        send("PATIENT", a.getPatientId(), patientEmail, "BOOKING_CONFIRMATION", subject, body);
+
+        String htmlBody = renderBookingConfirmationHtml(a, doctorName, date, time);
+
+        send("PATIENT", a.getPatientId(), patientEmail, "BOOKING_CONFIRMATION", subject, plainBody, htmlBody);
     }
 
+    private String renderBookingConfirmationHtml(Appointment a, String doctorName, String date, String time) {
+        Context context = new Context();
+        context.setVariable("patientName", a.getPatientName());
+        context.setVariable("doctorName", doctorName);
+        context.setVariable("date", date);
+        context.setVariable("time", time);
+        context.setVariable("reference", a.getReference());
+        return templateEngine.process("email/booking-confirmation", context);
+    }
+
+    /** FR-027: sent to the doctor when a patient books with them. */
+    /** FR-027: sent to the doctor when a patient books with them. */
     public void notifyNewBookingToDoctor(Appointment a, String doctorEmail) {
+        String date = a.getDate().format(DATE_FMT);
+        String time = NotificationTimeFormatter.format(a.getTime());
+
         String subject = "New appointment booked — " + a.getReference();
-        String body = "You have a new appointment with " + a.getPatientName() + " on "
-                + a.getDate().format(DATE_FMT) + " at " + a.getTime() + ".\n"
+        String plainBody = "You have a new appointment with " + a.getPatientName() + " on "
+                + date + " at " + time + ".\n"
                 + "Reference number: " + a.getReference() + "\n\n"
                 + "— AppointMed";
-        send("DOCTOR", a.getDoctorId(), doctorEmail, "NEW_BOOKING", subject, body);
+
+        String htmlBody = renderNewBookingDoctorHtml(a, date, time);
+
+        send("DOCTOR", a.getDoctorId(), doctorEmail, "NEW_BOOKING", subject, plainBody, htmlBody);
     }
 
+    private String renderNewBookingDoctorHtml(Appointment a, String date, String time) {
+        Context context = new Context();
+        context.setVariable("patientName", a.getPatientName());
+        context.setVariable("date", date);
+        context.setVariable("time", time);
+        context.setVariable("reference", a.getReference());
+        return templateEngine.process("email/new-booking-doctor", context);
+    }
+
+    /** FR-023: sent to the patient when their appointment is cancelled, by whoever cancelled it. */
     public void notifyCancellation(Appointment a, String patientEmail, String cancelledBy) {
+        String doctorName = DoctorNameFormatter.format(a.getDoctorName());
+        String date = a.getDate().format(DATE_FMT);
+        String time = NotificationTimeFormatter.format(a.getTime());
+
         String subject = "Appointment cancelled — " + a.getReference();
-        String body = "Hi " + a.getPatientName() + ",\n\n"
-                + "Your appointment with " + DoctorNameFormatter.format(a.getDoctorName()) + " on " + a.getDate().format(DATE_FMT)
-                + " at " + a.getTime() + " has been cancelled by " + cancelledBy + ".\n"
+
+        String plainBody = "Hi " + a.getPatientName() + ",\n\n"
+                + "Your appointment with " + doctorName + " on " + date
+                + " at " + time + " has been cancelled by " + cancelledBy + ".\n"
                 + "Reference number: " + a.getReference() + "\n\n"
                 + "If this wasn't expected, please contact the clinic directly.\n\n"
                 + "— AppointMed";
-        send("PATIENT", a.getPatientId(), patientEmail, "CANCELLATION", subject, body);
+
+        String htmlBody = renderCancellationHtml(a, doctorName, date, time, cancelledBy);
+
+        send("PATIENT", a.getPatientId(), patientEmail, "CANCELLATION", subject, plainBody, htmlBody);
     }
 
+    private String renderCancellationHtml(Appointment a, String doctorName, String date, String time, String cancelledBy) {
+        Context context = new Context();
+        context.setVariable("patientName", a.getPatientName());
+        context.setVariable("doctorName", doctorName);
+        context.setVariable("date", date);
+        context.setVariable("time", time);
+        context.setVariable("reference", a.getReference());
+        context.setVariable("cancelledBy", cancelledBy);
+        return templateEngine.process("email/appointment-cancelled", context);
+    }
+
+    /** FR-023: sent to the patient when their appointment is moved to a new date/time. */
     public void notifyReschedule(Appointment a, String patientEmail, String oldDate, String oldTime) {
+        String doctorName = DoctorNameFormatter.format(a.getDoctorName());
+        String newDate = a.getDate().format(DATE_FMT);
+        String newTime = NotificationTimeFormatter.format(a.getTime());
+
         String subject = "Appointment rescheduled — " + a.getReference();
-        String body = "Hi " + a.getPatientName() + ",\n\n"
-                + "Your appointment with " + DoctorNameFormatter.format(a.getDoctorName()) + " has been moved from "
-                + oldDate + " " + oldTime + " to " + a.getDate().format(DATE_FMT) + " at " + a.getTime() + ".\n"
+
+        String plainBody = "Hi " + a.getPatientName() + ",\n\n"
+                + "Your appointment with " + doctorName + " has been moved from "
+                + oldDate + " " + oldTime + " to " + newDate + " at " + newTime + ".\n"
                 + "Reference number: " + a.getReference() + "\n\n"
                 + "— AppointMed";
-        send("PATIENT", a.getPatientId(), patientEmail, "RESCHEDULE", subject, body);
+
+        String htmlBody = renderRescheduleHtml(a, doctorName, oldDate, oldTime, newDate, newTime);
+
+        send("PATIENT", a.getPatientId(), patientEmail, "RESCHEDULE", subject, plainBody, htmlBody);
     }
 
+    private String renderRescheduleHtml(Appointment a, String doctorName, String oldDate, String oldTime, String newDate, String newTime) {
+        Context context = new Context();
+        context.setVariable("patientName", a.getPatientName());
+        context.setVariable("doctorName", doctorName);
+        context.setVariable("oldDate", oldDate);
+        context.setVariable("oldTime", oldTime);
+        context.setVariable("newDate", newDate);
+        context.setVariable("newTime", newTime);
+        context.setVariable("reference", a.getReference());
+        return templateEngine.process("email/appointment-rescheduled", context);
+    }
+
+    /**
+     * FR-020: sent to a patient whose confirmed appointment falls on a date
+     * a doctor just marked unavailable. Informational only — this does not
+     * auto-cancel the appointment; the clinic still needs to follow up.
+     */
     public void notifyScheduleChange(Appointment a, String patientEmail) {
+        String doctorName = DoctorNameFormatter.format(a.getDoctorName());
+        String date = a.getDate().format(DATE_FMT);
+        String time = NotificationTimeFormatter.format(a.getTime());
+
         String subject = "Schedule change affecting your appointment — " + a.getReference();
-        String body = "Hi " + a.getPatientName() + ",\n\n"
-                + DoctorNameFormatter.format(a.getDoctorName()) + " has become unavailable on " + a.getDate().format(DATE_FMT)
-                + ", which is the date of your appointment at " + a.getTime() + " (Reference: " + a.getReference() + ").\n"
+        String plainBody = "Hi " + a.getPatientName() + ",\n\n"
+                + doctorName + " has become unavailable on " + date
+                + ", which is the date of your appointment at " + time + " (Reference: " + a.getReference() + ").\n"
                 + "The clinic will contact you shortly to reschedule. We apologize for the inconvenience.\n\n"
                 + "— AppointMed";
-        send("PATIENT", a.getPatientId(), patientEmail, "SCHEDULE_CHANGE", subject, body);
+
+        String htmlBody = renderScheduleChangeHtml(a, doctorName, date, time);
+
+        send("PATIENT", a.getPatientId(), patientEmail, "SCHEDULE_CHANGE", subject, plainBody, htmlBody);
     }
 
+    private String renderScheduleChangeHtml(Appointment a, String doctorName, String date, String time) {
+        Context context = new Context();
+        context.setVariable("patientName", a.getPatientName());
+        context.setVariable("doctorName", doctorName);
+        context.setVariable("date", date);
+        context.setVariable("time", time);
+        context.setVariable("reference", a.getReference());
+        return templateEngine.process("email/schedule-change", context);
+    }
+
+    /** FR-022: 24-hour or 1-hour reminder, called by ReminderScheduler. Both now have HTML templates — 1h is styled more urgently than 24h. */
     public void notifyReminder(Appointment a, String patientEmail, String windowLabel) {
+        String doctorName = DoctorNameFormatter.format(a.getDoctorName());
+        String date = a.getDate().format(DATE_FMT);
+        String time = NotificationTimeFormatter.format(a.getTime());
+
         String subject = "Reminder: appointment " + windowLabel + " — " + a.getReference();
-        String body = "Hi " + a.getPatientName() + ",\n\n"
-                + "This is a reminder that you have an appointment with " + DoctorNameFormatter.format(a.getDoctorName()) + " "
-                + windowLabel + ", on " + a.getDate().format(DATE_FMT) + " at " + a.getTime() + ".\n"
+        String plainBody = "Hi " + a.getPatientName() + ",\n\n"
+                + "This is a reminder that you have an appointment with " + doctorName + " "
+                + windowLabel + ", on " + date + " at " + time + ".\n"
                 + "Reference number: " + a.getReference() + "\n\n"
                 + "— AppointMed";
-        String type = "in 24 hours".equals(windowLabel) ? "REMINDER_24H" : "REMINDER_1H";
-        send("PATIENT", a.getPatientId(), patientEmail, type, subject, body);
+
+        boolean isOneHour = "in 1 hour".equals(windowLabel);
+        String type = isOneHour ? "REMINDER_1H" : "REMINDER_24H";
+        String templateName = isOneHour ? "email/appointment-reminder-1h" : "email/appointment-reminder-24h";
+        String htmlBody = renderReminderHtml(templateName, a, doctorName, date, time);
+
+        send("PATIENT", a.getPatientId(), patientEmail, type, subject, plainBody, htmlBody);
     }
 
+    private String renderReminderHtml(String templateName, Appointment a, String doctorName, String date, String time) {
+        Context context = new Context();
+        context.setVariable("patientName", a.getPatientName());
+        context.setVariable("doctorName", doctorName);
+        context.setVariable("date", date);
+        context.setVariable("time", time);
+        context.setVariable("reference", a.getReference());
+        return templateEngine.process(templateName, context);
+    }
+
+    // ---------- Core send + log + retry ----------
+
+    /** Plain-text-only overload — used by every notification type that doesn't have an HTML template yet. */
     private void send(String recipientType, Long recipientId, String recipientEmail,
                        String type, String subject, String body) {
+        send(recipientType, recipientId, recipientEmail, type, subject, body, null);
+    }
+
+    /**
+     * @param htmlBody optional — when present, the email is sent as HTML with
+     *                 plainBody as the fallback for clients that can't render
+     *                 HTML (multipart/alternative). When null, plain text only.
+     */
+    private void send(String recipientType, Long recipientId, String recipientEmail,
+                       String type, String subject, String plainBody, String htmlBody) {
         if (recipientEmail == null || recipientEmail.isBlank()) {
             log.warn("Skipping notification type={} — recipient {} #{} has no email on file",
                     type, recipientType, recipientId);
@@ -112,7 +267,7 @@ public class NotificationService {
         n.setRecipientEmail(recipientEmail);
         n.setType(type);
         n.setSubject(subject);
-        n.setBody(body);
+        n.setBody(plainBody); // the log always stores the plain-text version — short and readable in the admin table
 
         if (!emailEnabled || mailSender == null) {
             n.setStatus("LOGGED");
@@ -128,11 +283,18 @@ public class NotificationService {
         while (attempts < MAX_ATTEMPTS && !sent) {
             attempts++;
             try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setFrom(fromEmail);
-                message.setTo(recipientEmail);
-                message.setSubject(subject);
-                message.setText(body);
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, htmlBody != null, "UTF-8");
+                helper.setFrom(fromEmail);
+                helper.setTo(recipientEmail);
+                helper.setSubject(subject);
+
+                if (htmlBody != null) {
+                    helper.setText(plainBody, htmlBody); // multipart/alternative: HTML + plain-text fallback
+                } else {
+                    helper.setText(plainBody);
+                }
+
                 mailSender.send(message);
                 sent = true;
             } catch (Exception e) {
