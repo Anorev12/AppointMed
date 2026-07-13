@@ -5,7 +5,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.appointmed.databinding.ItemAdminPatientBinding
 import com.example.appointmed.features.admin.models.AdminPatient
 class AdminPatientAdapter(
-    private val patients: List<AdminPatient>
+    private val patients: List<AdminPatient>,
+    private val onViewHistory: (AdminPatient) -> Unit,
+    private val onDelete: (AdminPatient) -> Unit
 ) : RecyclerView.Adapter<AdminPatientAdapter.ViewHolder>() {
 
     inner class ViewHolder(val binding: ItemAdminPatientBinding) : RecyclerView.ViewHolder(binding.root)
@@ -20,9 +22,8 @@ class AdminPatientAdapter(
         holder.binding.tvPatientNameAdmin.text = patient.name
         holder.binding.tvPatientEmailAdmin.text = patient.email
         holder.binding.tvPatientContactAdmin.text = patient.contact
-        // TODO: no per-patient history endpoint exists yet — wire this
-        // button once /api/admin/patients/{id}/history (or similar) exists.
-        holder.binding.btnViewHistory.setOnClickListener { }
+        holder.binding.btnViewHistory.setOnClickListener { onViewHistory(patient) }
+        holder.binding.btnDeletePatient.setOnClickListener { onDelete(patient) }
     }
 
     override fun getItemCount() = patients.size

@@ -1,4 +1,6 @@
 package com.example.appointmed.features.admin.models
-
-class AdminSimpleResponse {
-}
+data class AdminSimpleResponse(
+    val id: Long,
+    val fullName: String,
+    val email: String
+)

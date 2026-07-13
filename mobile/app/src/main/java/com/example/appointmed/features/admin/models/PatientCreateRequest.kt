@@ -1,4 +1,8 @@
 package com.example.appointmed.features.admin.models
 
-class PatientCreateRequest {
-}
+data class PatientCreateRequest(
+    val fullName: String,
+    val email: String,
+    val password: String,
+    val contactNumber: String
+)
