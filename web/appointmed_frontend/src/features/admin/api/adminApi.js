@@ -5,13 +5,17 @@ import { apiFetch } from "../../../shared/api/httpClient";
  * FR-016 (override any appointment).
  */
 export const AdminAPI = {
+  // ---- Doctors ----
   createDoctor: (payload) =>
     apiFetch("/admin/doctors", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
 
-  listDoctors: () => apiFetch("/admin/doctors"),
+  listDoctors: (search) => {
+    const qs = search ? `?search=${encodeURIComponent(search)}` : "";
+    return apiFetch(`/admin/doctors${qs}`);
+  },
 
   setDoctorStatus: (id, status) =>
     apiFetch(`/admin/doctors/${id}/status`, {
@@ -19,9 +23,48 @@ export const AdminAPI = {
       body: JSON.stringify({ status }),
     }),
 
-  listPatients: () => apiFetch("/admin/patients"),
+  deleteDoctor: (id) =>
+    apiFetch(`/admin/doctors/${id}`, {
+      method: "DELETE",
+    }),
+
+  // ---- Patients ----
+  listPatients: (search) => {
+    const qs = search ? `?search=${encodeURIComponent(search)}` : "";
+    return apiFetch(`/admin/patients${qs}`);
+  },
+
+  createPatient: (payload) =>
+    apiFetch("/admin/patients", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  deletePatient: (id) =>
+    apiFetch(`/admin/patients/${id}`, {
+      method: "DELETE",
+    }),
 
   patientHistory: (id) => apiFetch(`/admin/patients/${id}/appointments`),
+
+  // ---- Admins ----
+  listAdmins: () => apiFetch("/admin/admins"),
+
+  createAdmin: (payload) =>
+    apiFetch("/admin/admins", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  // Deliberately no deleteAdmin — admins can never delete another admin account.
+
+  changeOwnPassword: (payload) =>
+    apiFetch("/admin/password", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
+  // ---- Appointments ----
 
   /** FR-035: keyword/status are optional server-side search filters, same shape as patient history search. */
   listAppointments: ({ status, keyword } = {}) => {
