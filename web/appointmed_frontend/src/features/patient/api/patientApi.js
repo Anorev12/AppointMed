@@ -50,4 +50,10 @@ export const PatientProfileAPI = {
       method: "PUT",
       body: JSON.stringify({ fullName, contactNumber, medicalHistory }),
     }),
+
+  changePassword: (payload) =>
+    apiFetch("/patient/profile/password", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
 };

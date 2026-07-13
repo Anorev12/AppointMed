@@ -73,6 +73,12 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
 
+  // ---- Change own password ----
+  const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+
   useEffect(() => {
     loadDoctors();
     loadAppointments();
@@ -276,6 +282,32 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
     }
   }
 
+  async function submitPasswordChange(ev) {
+    ev.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError("Fill in all fields.");
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("New password and confirmation don't match.");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await PatientProfileAPI.changePassword(passwordForm);
+      setPasswordSuccess("Password updated successfully.");
+      setPasswordForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (err) {
+      setPasswordError(err.message || "Couldn't update your password.");
+    } finally {
+      setChangingPassword(false);
+    }
+  }
+
   // Feature 1: "next appointment" must be the nearest upcoming CONFIRMED
   // appointment by schedule date/time — never by booking/creation order or
   // appointment id. Cancelled and completed appointments are excluded, and
@@ -322,6 +354,12 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
           >
             Profile
           </button>
+          <button
+            className={`db-nav-item${view === "password" ? " is-active" : ""}`}
+            onClick={() => setView("password")}
+          >
+            Change Password
+          </button>
         </div>
 
         <div className="db-sidebar-foot">
@@ -347,12 +385,14 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
               {view === "book" && "Book an appointment"}
               {view === "history" && "My appointments"}
               {view === "profile" && "My profile"}
+              {view === "password" && "Change password"}
             </div>
             <div className="db-topbar-sub">
               {view === "home" && "Here's what's coming up."}
               {view === "book" && "Pick a doctor, then a date and time."}
               {view === "history" && "Everything you've booked, past and upcoming."}
               {view === "profile" && "Keep your details up to date."}
+              {view === "password" && "Update the password for your own account."}
             </div>
           </div>
         </div>
@@ -671,6 +711,60 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                     </button>
                   </>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* ---------- CHANGE PASSWORD ---------- */}
+          {view === "password" && (
+            <div className="db-panel" style={{ maxWidth: 480 }}>
+              <div className="db-panel-head">
+                <div className="db-panel-title">Change your password</div>
+              </div>
+              <div className="db-panel-body">
+                <form onSubmit={submitPasswordChange}>
+                  <div className="db-field">
+                    <label className="db-label">Current password</label>
+                    <input
+                      className="db-input"
+                      type="password"
+                      value={passwordForm.oldPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="db-field">
+                    <label className="db-label">New password</label>
+                    <input
+                      className="db-input"
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="db-field">
+                    <label className="db-label">Confirm new password</label>
+                    <input
+                      className="db-input"
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  {passwordError && (
+                    <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>{passwordError}</div>
+                  )}
+                  {passwordSuccess && (
+                    <div style={{ color: "var(--green)", fontSize: 13, marginBottom: 12 }}>{passwordSuccess}</div>
+                  )}
+
+                  <button className="db-btn primary" type="submit" disabled={changingPassword}>
+                    {changingPassword ? "Updating…" : "Update password"}
+                  </button>
+                </form>
               </div>
             </div>
           )}
