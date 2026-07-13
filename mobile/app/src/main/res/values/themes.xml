@@ -27,4 +27,13 @@
 
     <style name="Theme.AppointMed" parent="Base.Theme.AppointMed" />
 
+    <!-- Splash screen theme: shows the brand background instantly via
+         windowBackground, before activity_splash.xml even inflates,
+         so there's no white flash on cold start. -->
+    <style name="Theme.AppointMed.Splash" parent="Base.Theme.AppointMed">
+        <item name="android:windowBackground">@drawable/bg_splash</item>
+        <item name="android:statusBarColor" tools:targetApi="l">@color/am_ink</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+
 </resources>

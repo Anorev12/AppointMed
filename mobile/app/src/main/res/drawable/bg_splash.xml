@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Flat am_ink shows instantly, before activity_splash.xml even inflates -->
+    <item android:drawable="@color/am_ink" />
+</layer-list>

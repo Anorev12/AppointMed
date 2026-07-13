@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/am_ink"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <!-- Matches the AppointMed wordmark exactly: "Appoint" in am_paper,
+         "Med" in am_stamp, set in Zilla Slab Bold on am_ink. -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/zilla_slab"
+            android:text="Appoint"
+            android:textColor="@color/am_paper"
+            android:textSize="40sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/zilla_slab"
+            android:text="Med"
+            android:textColor="@color/am_stamp"
+            android:textSize="40sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:fontFamily="@font/work_sans"
+        android:letterSpacing="0.04"
+        android:text="@string/splash_tagline"
+        android:textColor="@color/am_left_sub_text"
+        android:textSize="14sp" />
+
+</LinearLayout>
