@@ -67,7 +67,7 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
 
   // ---- Add patient form ----
   const [showAddPatient, setShowAddPatient] = useState(false);
-  const [newPatient, setNewPatient] = useState({ fullName: "", email: "", password: "", contactNumber: "" });
+  const [newPatient, setNewPatient] = useState({ fullName: "", email: "", password: "", contactNumber: "", dateOfBirth: "" });
   const [addPatientError, setAddPatientError] = useState("");
   const [addingPatient, setAddingPatient] = useState(false);
 
@@ -122,6 +122,7 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
       const data = await AdminAPI.listAdmins();
       setAdmins(data);
     } catch (err) {
+      console.error("ADMINS LOAD ERROR:", err);
       setAdminsError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't load admins.");
     } finally {
       setAdminsLoading(false);
@@ -228,7 +229,7 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
     try {
       const data = await AdminAPI.createPatient(newPatient);
       setPatients((prev) => [...prev, data]);
-      setNewPatient({ fullName: "", email: "", password: "", contactNumber: "" });
+      setNewPatient({ fullName: "", email: "", password: "", contactNumber: "", dateOfBirth: "" });
       setShowAddPatient(false);
     } catch (err) {
       if (err.status === undefined) {
@@ -611,6 +612,17 @@ export default function AdminDashboard({ adminName = "Admin", onLogout }) {
                           className="db-input"
                           value={newPatient.contactNumber}
                           onChange={(e) => setNewPatient({ ...newPatient, contactNumber: e.target.value })}
+                        />
+                      </div>
+                      <div className="db-field">
+                        <label className="db-label">Date of birth (optional)</label>
+                        <input
+                          type="date"
+                          className="db-input"
+                          style={{ maxWidth: 220 }}
+                          value={newPatient.dateOfBirth}
+                          max={todayStr()}
+                          onChange={(e) => setNewPatient({ ...newPatient, dateOfBirth: e.target.value })}
                         />
                       </div>
 
