@@ -9,7 +9,8 @@ fun AppointmentApiResponse.toUi(): Appointment = Appointment(
     specialization = specialization,
     date = date,
     time = time,
-    status = status.lowercase() // "CONFIRMED" -> "confirmed", matches the adapter's checks
+    status = status.lowercase(), // "CONFIRMED" -> "confirmed", matches the adapter's checks
+    needsReschedule = needsReschedule
 )
 
 /** Converts a raw API doctor into the shape DoctorAdapter expects. */

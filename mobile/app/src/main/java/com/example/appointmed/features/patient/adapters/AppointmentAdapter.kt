@@ -41,6 +41,14 @@ class AppointmentAdapter(
         holder.binding.tvAptStatus.setBackgroundColor(ContextCompat.getColor(context, bgColor))
         holder.binding.tvAptStatus.setTextColor(ContextCompat.getColor(context, textColor))
 
+        // FR-020: doctor went unavailable on this date after the appointment was booked.
+        holder.binding.tvNeedsReschedule.visibility = if (apt.needsReschedule) View.VISIBLE else View.GONE
+        if (apt.needsReschedule) {
+            holder.binding.btnRescheduleApt.setTextColor(ContextCompat.getColor(context, R.color.amber))
+        } else {
+            holder.binding.btnRescheduleApt.setTextColor(ContextCompat.getColor(context, R.color.ink))
+        }
+
         // Only a still-confirmed, upcoming appointment can be changed (FR-011).
         holder.binding.btnCancelApt.visibility = if (isConfirmed) View.VISIBLE else View.GONE
         holder.binding.btnRescheduleApt.visibility = if (isConfirmed) View.VISIBLE else View.GONE

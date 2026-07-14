@@ -134,6 +134,20 @@
                             android:textSize="12.5sp"
                             tools:text="2026-07-10 · 09:00 · Ref APT-102938" />
 
+                        <TextView
+                            android:id="@+id/tvNextNeedsReschedule"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp"
+                            android:background="@color/amber_soft"
+                            android:textColor="@color/amber"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            android:text="⚠ Doctor unavailable — please reschedule"
+                            android:visibility="gone" />
+
                     </LinearLayout>
 
                     <Button

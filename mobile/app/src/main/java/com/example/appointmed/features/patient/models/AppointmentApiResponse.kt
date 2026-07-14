@@ -9,5 +9,6 @@ data class AppointmentApiResponse(
     val specialization: String,
     val date: String,
     val time: String,
-    val status: String // "CONFIRMED" | "CANCELLED" | "COMPLETED"
+    val status: String, // "CONFIRMED" | "CANCELLED" | "COMPLETED"
+    val needsReschedule: Boolean = false
 )

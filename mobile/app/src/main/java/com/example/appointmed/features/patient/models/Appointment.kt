@@ -8,5 +8,6 @@ data class Appointment(
     val specialization: String,
     val date: String,
     val time: String,
-    var status: String  // "confirmed" | "cancelled" | "completed" (lowercased for the adapter's checks)
+    var status: String,  // "confirmed" | "cancelled" | "completed" (lowercased for the adapter's checks)
+    val needsReschedule: Boolean = false // FR-020: doctor went unavailable on this date after booking
 )
