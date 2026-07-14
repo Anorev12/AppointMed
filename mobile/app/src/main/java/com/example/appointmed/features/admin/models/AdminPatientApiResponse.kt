@@ -5,5 +5,6 @@ data class AdminPatientApiResponse(
     val id: Long,
     val fullName: String,
     val email: String,
-    val contactNumber: String?
+    val contactNumber: String?,
+    val dateOfBirth: String?
 )

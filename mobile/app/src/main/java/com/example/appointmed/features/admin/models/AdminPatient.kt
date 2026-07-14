@@ -3,5 +3,6 @@ data class AdminPatient(
     val id: Long,
     val name: String,
     val email: String,
-    val contact: String
+    val contact: String,
+    val dateOfBirth: String?
 )

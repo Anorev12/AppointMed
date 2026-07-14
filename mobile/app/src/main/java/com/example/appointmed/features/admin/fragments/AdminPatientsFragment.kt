@@ -1,5 +1,6 @@
 package com.example.appointmed.features.admin.fragments
 import android.app.AlertDialog
+import android.app.DatePickerDialog
 import android.os.Bundle
 import android.util.Patterns
 import android.view.LayoutInflater
@@ -18,6 +19,8 @@ import com.example.appointmed.features.admin.models.AdminPatient
 import com.example.appointmed.features.admin.models.PatientCreateRequest
 import com.example.appointmed.features.admin.models.toUi
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import java.util.Locale
 
 /** Wired to /api/admin/patients (list/create/delete) and /api/admin/patients/{id}/appointments. */
 class AdminPatientsFragment : Fragment() {
@@ -121,7 +124,37 @@ class AdminPatientsFragment : Fragment() {
                 attemptCreatePatient(dialogBinding, dialog)
             }
         }
+        dialogBinding.etNewPatientDob.setOnClickListener { showDobPicker(dialogBinding) }
 
+        dialog.show()
+    }
+
+    /** Opens a date picker seeded with the current value (or today), and writes "yyyy-MM-dd" back into etNewPatientDob. */
+    private fun showDobPicker(dialogBinding: DialogAddPatientBinding) {
+        val calendar = Calendar.getInstance()
+        val current = dialogBinding.etNewPatientDob.text?.toString().orEmpty()
+        if (current.isNotBlank()) {
+            val parts = current.split("-")
+            if (parts.size == 3) {
+                val year = parts[0].toIntOrNull()
+                val month = parts[1].toIntOrNull()
+                val day = parts[2].toIntOrNull()
+                if (year != null && month != null && day != null) {
+                    calendar.set(year, month - 1, day)
+                }
+            }
+        }
+
+        val dialog = DatePickerDialog(
+            requireContext(),
+            { _, year, month, dayOfMonth ->
+                dialogBinding.etNewPatientDob.setText(String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, dayOfMonth))
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+        dialog.datePicker.maxDate = System.currentTimeMillis()
         dialog.show()
     }
 
@@ -132,6 +165,7 @@ class AdminPatientsFragment : Fragment() {
         val email = dialogBinding.etNewPatientEmail.text.toString().trim()
         val password = dialogBinding.etNewPatientPassword.text.toString()
         val contact = dialogBinding.etNewPatientContact.text.toString().trim()
+        val dob = dialogBinding.etNewPatientDob.text.toString().trim()
 
         if (fullName.isEmpty() || password.isEmpty()) {
             showDialogError(dialogBinding, "Fill in all required fields.")
@@ -147,7 +181,7 @@ class AdminPatientsFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val response = RetrofitClient.getAdminApi(requireContext())
-                    .createPatient(PatientCreateRequest(fullName, email, password, contact))
+                    .createPatient(PatientCreateRequest(fullName, email, password, contact, dob.ifEmpty { null }))
 
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
 

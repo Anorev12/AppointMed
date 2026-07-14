@@ -4,5 +4,6 @@ data class PatientCreateRequest(
     val fullName: String,
     val email: String,
     val password: String,
-    val contactNumber: String
+    val contactNumber: String,
+    val dateOfBirth: String?
 )

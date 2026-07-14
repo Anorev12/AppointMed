@@ -23,5 +23,7 @@ fun AdminPatientApiResponse.toUi(): AdminPatient = AdminPatient(
     id = id,
     name = fullName,
     email = email,
-    contact = contactNumber ?: "—"
+    contact = contactNumber ?: "—",
+    dateOfBirth = dateOfBirth
 )
+
