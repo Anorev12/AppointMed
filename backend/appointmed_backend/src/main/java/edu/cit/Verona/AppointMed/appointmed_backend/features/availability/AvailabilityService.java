@@ -95,10 +95,17 @@ public class AvailabilityService {
 
         unavailableDateRepository.save(new UnavailableDate(doctorId, date));
 
-        // FR-020: any patient already booked on this now-unavailable date needs to know.
-        // Informational only — doesn't auto-cancel; the clinic still follows up.
+        // FR-020: any patient already booked on this now-unavailable date needs to know
+        // and be able to act on it. Doesn't auto-cancel — status stays CONFIRMED — but
+        // needsReschedule=true surfaces a "reschedule needed" prompt in their dashboard
+        // and lets them reschedule/cancel past the normal cutoff window (see
+        // AppointmentService.requireBeforeCutoff), since the clinic caused this change,
+        // not them.
         List<Appointment> affected = appointmentRepository.findByDoctorIdAndDateAndStatus(doctorId, date, "CONFIRMED");
         for (Appointment appointment : affected) {
+            appointment.setNeedsReschedule(true);
+            appointmentRepository.save(appointment);
+
             patientRepository.findById(appointment.getPatientId())
                     .ifPresent(p -> notificationService.notifyScheduleChange(appointment, p.getEmail()));
         }
