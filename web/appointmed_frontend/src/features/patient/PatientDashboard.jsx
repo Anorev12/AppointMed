@@ -271,9 +271,15 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
       const updated = await PatientProfileAPI.update(
         profile.fullName,
         profile.contact,
+        profile.dateOfBirth,
         profile.medicalHistory
       );
-      setProfile((p) => ({ ...p, fullName: updated.fullName, contact: updated.contactNumber }));
+      setProfile((p) => ({
+        ...p,
+        fullName: updated.fullName,
+        contact: updated.contactNumber,
+        dateOfBirth: updated.dateOfBirth || "",
+      }));
       setSaveMessage("Saved.");
     } catch (err) {
       setProfileError(err.message || "Couldn't save your profile.");
@@ -308,16 +314,16 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
     }
   }
 
-  // Feature 1: "next appointment" must be the nearest upcoming CONFIRMED
-  // appointment by schedule date/time — never by booking/creation order or
-  // appointment id. Cancelled and completed appointments are excluded, and
-  // so is anything whose date has already passed.
+  // Feature 1: the "Next appointment(s)" panel shows every upcoming CONFIRMED
+  // appointment (not just the nearest one), ordered by schedule date/time —
+  // never by booking/creation order or appointment id. Cancelled and
+  // completed appointments are excluded, and so is anything whose date has
+  // already passed.
   const todayIso = todayStr();
   const upcomingSorted = appointments
     .filter((a) => a.status === "CONFIRMED" && a.date >= todayIso)
     .slice()
     .sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date)));
-  const nextAppointment = upcomingSorted[0] || null;
   const selectedDoctorObj = doctors.find((d) => d.id === selectedDoctor);
 
   return (
@@ -418,7 +424,7 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
 
               <div className="db-panel">
                 <div className="db-panel-head">
-                  <div className="db-panel-title">Next appointment</div>
+                  <div className="db-panel-title">Next appointment{upcomingSorted.length > 1 ? "s" : ""}</div>
                   <button className="db-btn outline sm" onClick={() => setView("book")}>
                     Book another
                   </button>
@@ -427,30 +433,32 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                   {apptsError && <div className="db-error">{apptsError}</div>}
                   {apptsLoading ? (
                     <div className="db-empty">Loading…</div>
-                  ) : !nextAppointment ? (
+                  ) : upcomingSorted.length === 0 ? (
                     <div className="db-empty">You have no upcoming appointments.</div>
                   ) : (
-                    <div className="db-row" key={nextAppointment.id}>
-                      <div className="db-row-time">{formatTime12h(nextAppointment.time)}</div>
-                      <div className="db-row-avatar">
-                        {nextAppointment.doctorName?.trim().split(" ").pop()?.[0] || "D"}
+                    upcomingSorted.map((appt) => (
+                      <div className="db-row" key={appt.id}>
+                        <div className="db-row-time">{formatTime12h(appt.time)}</div>
+                        <div className="db-row-avatar">
+                          {appt.doctorName?.trim().split(" ").pop()?.[0] || "D"}
+                        </div>
+                        <div className="db-row-main">
+                          <div className="db-row-title">{appt.doctorName} · {appt.specialization}</div>
+                          <div className="db-row-sub">{appt.date} · Ref {appt.reference}</div>
+                        </div>
+                        {appt.needsReschedule ? (
+                          <span
+                            className="db-badge"
+                            style={{ background: "rgba(214,161,59,.16)", color: "var(--amber)" }}
+                            title="Your doctor became unavailable on this date — please reschedule."
+                          >
+                            Needs reschedule
+                          </span>
+                        ) : (
+                          <span className="db-badge confirmed">Confirmed</span>
+                        )}
                       </div>
-                      <div className="db-row-main">
-                        <div className="db-row-title">{nextAppointment.doctorName} · {nextAppointment.specialization}</div>
-                        <div className="db-row-sub">{nextAppointment.date} · Ref {nextAppointment.reference}</div>
-                      </div>
-                      {nextAppointment.needsReschedule ? (
-                        <span
-                          className="db-badge"
-                          style={{ background: "rgba(214,161,59,.16)", color: "var(--amber)" }}
-                          title="Your doctor became unavailable on this date — please reschedule."
-                        >
-                          Needs reschedule
-                        </span>
-                      ) : (
-                        <span className="db-badge confirmed">Confirmed</span>
-                      )}
-                    </div>
+                    ))
                   )}
                 </div>
               </div>
@@ -552,7 +560,7 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                       <div style={{ fontSize: 13.5, marginBottom: 14 }}>
                         {selectedDoctorObj
                           ? `${selectedDoctorObj.fullName}${
-                              selectedSlot ? ` · ${selectedDate} · ${formatTime12h(selectedSlot)}` : " · select a date and time"
+                              selectedSlot ? ` · ${selectedDate} · ${selectedSlot}` : " · select a date and time"
                             }`
                           : "Select a doctor to continue."}
                       </div>
@@ -709,6 +717,17 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                         className="db-input"
                         value={profile.contact}
                         onChange={(e) => setProfile({ ...profile, contact: e.target.value })}
+                      />
+                    </div>
+                    <div className="db-field">
+                      <label className="db-label">Date of birth</label>
+                      <input
+                        type="date"
+                        className="db-input"
+                        style={{ maxWidth: 220 }}
+                        value={profile.dateOfBirth || ""}
+                        max={todayStr()}
+                        onChange={(e) => setProfile({ ...profile, dateOfBirth: e.target.value })}
                       />
                     </div>
                     <div className="db-field">
