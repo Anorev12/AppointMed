@@ -552,7 +552,7 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                       <div style={{ fontSize: 13.5, marginBottom: 14 }}>
                         {selectedDoctorObj
                           ? `${selectedDoctorObj.fullName}${
-                              selectedSlot ? ` · ${selectedDate} · ${selectedSlot}` : " · select a date and time"
+                              selectedSlot ? ` · ${selectedDate} · ${formatTime12h(selectedSlot)}` : " · select a date and time"
                             }`
                           : "Select a doctor to continue."}
                       </div>
