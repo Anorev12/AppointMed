@@ -30,5 +30,7 @@
     <color name="danger_soft">#FBEAEA</color>
     <color name="success">#2E9E5B</color>
     <color name="success_soft">#E9F7EF</color>
+    <color name="amber">#D6A13B</color>
+    <color name="amber_soft">#FBF3E3</color>
     <color name="border">#E3E8F0</color>
 </resources>
