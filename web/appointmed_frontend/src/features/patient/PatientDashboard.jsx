@@ -439,7 +439,17 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                         <div className="db-row-title">{nextAppointment.doctorName} · {nextAppointment.specialization}</div>
                         <div className="db-row-sub">{nextAppointment.date} · Ref {nextAppointment.reference}</div>
                       </div>
-                      <span className="db-badge confirmed">Confirmed</span>
+                      {nextAppointment.needsReschedule ? (
+                        <span
+                          className="db-badge"
+                          style={{ background: "rgba(214,161,59,.16)", color: "var(--amber)" }}
+                          title="Your doctor became unavailable on this date — please reschedule."
+                        >
+                          Needs reschedule
+                        </span>
+                      ) : (
+                        <span className="db-badge confirmed">Confirmed</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -623,19 +633,28 @@ export default function PatientDashboard({ patientName = "Patient", onLogout }) 
                     </thead>
                     <tbody>
                       {appointments.map((a) => (
-                        <tr key={a.id}>
+                        <tr key={a.id} style={a.needsReschedule ? { backgroundColor: "rgba(214,161,59,.08)" } : undefined}>
                           <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
                           <td>{a.doctorName} <span style={{ color: "var(--ink-soft)" }}>· {a.specialization}</span></td>
                           <td>{a.date}</td>
                           <td>{formatTime12h(a.time)}</td>
                           <td>
                             <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
+                            {a.needsReschedule && (
+                              <span
+                                className="db-badge"
+                                style={{ marginLeft: 6, background: "rgba(214,161,59,.16)", color: "var(--amber)" }}
+                                title="Your doctor became unavailable on this date — please reschedule."
+                              >
+                                needs reschedule
+                              </span>
+                            )}
                           </td>
                           <td style={{ whiteSpace: "nowrap" }}>
                             {a.status === "CONFIRMED" && (
                               <>
                                 <button
-                                  className="db-btn outline sm"
+                                  className={a.needsReschedule ? "db-btn primary sm" : "db-btn outline sm"}
                                   style={{ marginRight: 6 }}
                                   onClick={() => openReschedule(a)}
                                 >
