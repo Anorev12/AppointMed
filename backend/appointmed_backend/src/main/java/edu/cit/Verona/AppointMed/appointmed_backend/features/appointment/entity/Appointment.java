@@ -56,6 +56,17 @@ public class Appointment {
     @Column(nullable = false)
     private boolean reminder1hSent = false;
 
+    /**
+     * FR-020: set to true when a doctor marks a date unavailable while this
+     * appointment is CONFIRMED on that date. Surfaced in the patient's
+     * dashboard so it's obvious the appointment needs attention, and lets
+     * them reschedule/cancel past the normal cutoff window — see
+     * AppointmentService.requireBeforeCutoff(). Cleared automatically once
+     * the patient reschedules or cancels.
+     */
+    @Column(nullable = false)
+    private boolean needsReschedule = false;
+
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -96,6 +107,9 @@ public class Appointment {
 
     public boolean isReminder1hSent() { return reminder1hSent; }
     public void setReminder1hSent(boolean reminder1hSent) { this.reminder1hSent = reminder1hSent; }
+
+    public boolean isNeedsReschedule() { return needsReschedule; }
+    public void setNeedsReschedule(boolean needsReschedule) { this.needsReschedule = needsReschedule; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

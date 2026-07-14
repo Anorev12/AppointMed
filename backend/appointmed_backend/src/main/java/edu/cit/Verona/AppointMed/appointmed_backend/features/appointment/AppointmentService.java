@@ -194,9 +194,14 @@ public class AppointmentService {
         if ("COMPLETED".equals(appointment.getStatus())) {
             throw new IllegalArgumentException("A completed appointment can't be cancelled.");
         }
-        requireBeforeCutoff(appointment);
+        // FR-020: the cutoff protects against last-minute *patient* changes — it doesn't
+        // apply when the clinic is the one who caused the change (doctor went unavailable).
+        if (!appointment.isNeedsReschedule()) {
+            requireBeforeCutoff(appointment);
+        }
 
         appointment.setStatus("CANCELLED");
+        appointment.setNeedsReschedule(false);
         appointment = appointmentRepository.save(appointment);
 
         Appointment finalAppointment = appointment;
@@ -224,7 +229,11 @@ public class AppointmentService {
         if (!"CONFIRMED".equals(appointment.getStatus())) {
             throw new IllegalArgumentException("Only a confirmed appointment can be rescheduled.");
         }
-        requireBeforeCutoff(appointment);
+        // FR-020: same bypass as cancel() — a clinic-forced schedule change
+        // shouldn't be blocked by the patient-initiated-change cutoff.
+        if (!appointment.isNeedsReschedule()) {
+            requireBeforeCutoff(appointment);
+        }
 
         LocalDate newDate = parseDate(request.getDate());
         LocalTime newTime = parseTime(request.getTime());
@@ -236,10 +245,11 @@ public class AppointmentService {
         validateSlot(appointment.getDoctorId(), newDate, newTime);
 
         String oldDateStr = appointment.getDate().toString();
-        String oldTimeStr = appointment.getTime().format(TIME_FMT);
+        String oldTimeStr = edu.cit.Verona.AppointMed.appointmed_backend.features.notification.NotificationTimeFormatter.format(appointment.getTime());
 
         appointment.setDate(newDate);
         appointment.setTime(newTime);
+        appointment.setNeedsReschedule(false);
         // Reference number and status are preserved — this is the same booking, just moved.
         appointment = appointmentRepository.save(appointment);
 
@@ -409,7 +419,8 @@ public class AppointmentService {
                 a.getPatientName(),
                 a.getDate().toString(),
                 a.getTime().format(TIME_FMT),
-                a.getStatus()
+                a.getStatus(),
+                a.isNeedsReschedule()
         );
     }
 

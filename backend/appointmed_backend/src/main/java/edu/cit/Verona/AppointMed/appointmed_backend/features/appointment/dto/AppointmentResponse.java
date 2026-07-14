@@ -11,10 +11,14 @@ public class AppointmentResponse {
     private String time; // "HH:mm"
     private String status; // "CONFIRMED" | "CANCELLED" | "COMPLETED"
 
+    /** FR-020: true when the doctor went unavailable on this appointment's date after it was booked. */
+    private boolean needsReschedule;
+
     public AppointmentResponse() {}
 
     public AppointmentResponse(Long id, String reference, Long doctorId, String doctorName,
-                                String specialization, String patientName, String date, String time, String status) {
+                                String specialization, String patientName, String date, String time,
+                                String status, boolean needsReschedule) {
         this.id = id;
         this.reference = reference;
         this.doctorId = doctorId;
@@ -24,6 +28,7 @@ public class AppointmentResponse {
         this.date = date;
         this.time = time;
         this.status = status;
+        this.needsReschedule = needsReschedule;
     }
 
     public Long getId() { return id; }
@@ -52,4 +57,7 @@ public class AppointmentResponse {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public boolean isNeedsReschedule() { return needsReschedule; }
+    public void setNeedsReschedule(boolean needsReschedule) { this.needsReschedule = needsReschedule; }
 }
