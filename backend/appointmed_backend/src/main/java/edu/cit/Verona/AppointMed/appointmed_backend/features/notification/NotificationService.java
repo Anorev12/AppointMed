@@ -187,11 +187,13 @@ public class NotificationService {
         String date = a.getDate().format(DATE_FMT);
         String time = NotificationTimeFormatter.format(a.getTime());
 
-        String subject = "Schedule change affecting your appointment — " + a.getReference();
+        String subject = "Action needed: reschedule your appointment — " + a.getReference();
         String plainBody = "Hi " + a.getPatientName() + ",\n\n"
                 + doctorName + " has become unavailable on " + date
                 + ", which is the date of your appointment at " + time + " (Reference: " + a.getReference() + ").\n"
-                + "The clinic will contact you shortly to reschedule. We apologize for the inconvenience.\n\n"
+                + "Please open the AppointMed app to pick a new date and time that works for you — "
+                + "you can reschedule or cancel this appointment any time, with no cutoff restriction, "
+                + "since this change wasn't something you asked for. We apologize for the inconvenience.\n\n"
                 + "— AppointMed";
 
         String htmlBody = renderScheduleChangeHtml(a, doctorName, date, time);

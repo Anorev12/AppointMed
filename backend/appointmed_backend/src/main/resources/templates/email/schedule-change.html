@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title th:text="'Schedule change affecting your appointment — ' + ${reference}">Schedule Change</title>
+<title th:text="'Action needed: reschedule your appointment — ' + ${reference}">Reschedule Needed</title>
 <!--[if mso]>
 <style>
   * { font-family: Georgia, serif !important; }
@@ -54,11 +54,11 @@
               Hi there,
             </p>
             <h1 style="margin:0; font-family: 'Zilla Slab', Georgia, serif; font-size: 26px; line-height: 1.3; color:#2F5D8A; font-weight: 600;">
-              Your doctor's schedule changed.
+              Please reschedule your appointment.
             </h1>
             <p style="margin: 10px 0 0 0; font-family: 'Work Sans', Arial, sans-serif; font-size: 14px; color:#5B6B7C; line-height: 1.6;"
-               th:text="${doctorName} + ' has become unavailable on ' + ${date} + ', which is the date of your appointment below. The clinic will contact you shortly to reschedule — we apologize for the inconvenience.'">
-              Your doctor has become unavailable on the date of your appointment. The clinic will contact you shortly to reschedule.
+              th:text="${doctorName} + ' has become unavailable on ' + ${date} + ', which is the date of your appointment below. Please open the app to pick a new date and time - you can reschedule or cancel any time, with no cutoff restriction, since this was not something you asked for. We apologize for the inconvenience.'">
+              Your doctor has become unavailable on the date of your appointment. Please reschedule at your convenience.
             </p>
           </td>
         </tr>
