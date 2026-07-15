@@ -79,4 +79,25 @@ export const AdminAPI = {
     apiFetch(`/admin/appointments/${id}/cancel`, {
       method: "PUT",
     }),
+
+  // ---- Doctor availability (FR-016) ----
+
+  getDoctorAvailability: (doctorId) => apiFetch(`/admin/doctors/${doctorId}/availability`),
+
+  updateDoctorAvailability: (doctorId, workingDays, startTime, endTime) =>
+    apiFetch(`/admin/doctors/${doctorId}/availability`, {
+      method: "PUT",
+      body: JSON.stringify({ workingDays: Array.from(workingDays), startTime, endTime }),
+    }),
+
+  addDoctorUnavailableDate: (doctorId, date) =>
+    apiFetch(`/admin/doctors/${doctorId}/availability/unavailable-dates`, {
+      method: "POST",
+      body: JSON.stringify({ date }),
+    }),
+
+  removeDoctorUnavailableDate: (doctorId, date) =>
+    apiFetch(`/admin/doctors/${doctorId}/availability/unavailable-dates/${date}`, {
+      method: "DELETE",
+    }),
 };

@@ -4,6 +4,16 @@ import "../../shared/styles/Appointmed.css";
 import { AdminAPI } from "./api/adminApi";
 import { formatTime12h } from "../../shared/utils/format";
 
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function daysArrayToMap(daysArray) {
+  const map = {};
+  WEEKDAYS.forEach((day) => {
+    map[day] = daysArray.includes(day);
+  });
+  return map;
+}
+
 /**
  * AppointMed — Admin Dashboard
  * Covers: FR-028, FR-030, FR-032, FR-034, FR-035 (overview, user mgmt, reports)
@@ -73,6 +83,18 @@ function setView(next) {
   const [doctorsError, setDoctorsError] = useState("");
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
   const [deletingDoctorId, setDeletingDoctorId] = useState(null);
+
+  // ---- Manage doctor availability (FR-016) ----
+  const [availDoctor, setAvailDoctor] = useState(null); // { id, fullName } | null
+  const [availLoading, setAvailLoading] = useState(false);
+  const [availError, setAvailError] = useState("");
+  const [availWorkingDays, setAvailWorkingDays] = useState({});
+  const [availHours, setAvailHours] = useState({ start: "09:00", end: "17:00" });
+  const [availUnavailableDates, setAvailUnavailableDates] = useState([]);
+  const [newUnavailableDate, setNewUnavailableDate] = useState("");
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const [scheduleSaveMessage, setScheduleSaveMessage] = useState("");
+  const [dateActionError, setDateActionError] = useState("");
 
   // ---- Admins ----
   const [admins, setAdmins] = useState([]);
@@ -245,6 +267,76 @@ function setView(next) {
       setDoctorsError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't delete that doctor.");
     } finally {
       setDeletingDoctorId(null);
+    }
+  }
+
+  // ---- Manage doctor availability (FR-016) ----
+
+  async function openManageAvailability(doctor) {
+    setAvailDoctor(doctor);
+    setAvailLoading(true);
+    setAvailError("");
+    setScheduleSaveMessage("");
+    setDateActionError("");
+    try {
+      const data = await AdminAPI.getDoctorAvailability(doctor.id);
+      setAvailWorkingDays(daysArrayToMap(data.workingDays || []));
+      setAvailHours({ start: data.startTime || "09:00", end: data.endTime || "17:00" });
+      setAvailUnavailableDates(data.unavailableDates || []);
+    } catch (err) {
+      setAvailError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't load this doctor's availability.");
+    } finally {
+      setAvailLoading(false);
+    }
+  }
+
+  function closeManageAvailability() {
+    setAvailDoctor(null);
+    setAvailWorkingDays({});
+    setAvailUnavailableDates([]);
+    setNewUnavailableDate("");
+  }
+
+  function toggleAvailDay(day) {
+    setAvailWorkingDays((prev) => ({ ...prev, [day]: !prev[day] }));
+  }
+
+  async function saveDoctorSchedule() {
+    setSavingSchedule(true);
+    setAvailError("");
+    setScheduleSaveMessage("");
+    try {
+      const selectedDays = WEEKDAYS.filter((day) => availWorkingDays[day]);
+      const data = await AdminAPI.updateDoctorAvailability(availDoctor.id, selectedDays, availHours.start, availHours.end);
+      setAvailWorkingDays(daysArrayToMap(data.workingDays || []));
+      setAvailHours({ start: data.startTime, end: data.endTime });
+      setScheduleSaveMessage("Schedule updated.");
+    } catch (err) {
+      setAvailError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't save this schedule.");
+    } finally {
+      setSavingSchedule(false);
+    }
+  }
+
+  async function addDoctorUnavailableDate() {
+    if (!newUnavailableDate) return;
+    setDateActionError("");
+    try {
+      const data = await AdminAPI.addDoctorUnavailableDate(availDoctor.id, newUnavailableDate);
+      setAvailUnavailableDates(data.unavailableDates || []);
+      setNewUnavailableDate("");
+    } catch (err) {
+      setDateActionError(err.message || "Couldn't mark that date unavailable.");
+    }
+  }
+
+  async function removeDoctorUnavailableDate(date) {
+    setDateActionError("");
+    try {
+      const data = await AdminAPI.removeDoctorUnavailableDate(availDoctor.id, date);
+      setAvailUnavailableDates(data.unavailableDates || []);
+    } catch (err) {
+      setDateActionError(err.message || "Couldn't remove that date.");
     }
   }
 
@@ -856,6 +948,9 @@ function setView(next) {
                                     ? "Mark on leave"
                                     : "Mark active"}
                                 </button>
+                                <button className="db-btn outline sm" onClick={() => openManageAvailability(d)}>
+                                  Manage availability
+                                </button>
                                 <button
                                   className="db-btn danger sm"
                                   disabled={deletingDoctorId === d.id}
@@ -1076,6 +1171,112 @@ function setView(next) {
 
             <div className="db-modal-actions">
               <button className="db-btn outline" onClick={closeHistory}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------- Manage doctor availability modal (FR-016) ---------- */}
+      {availDoctor && (
+        <div className="db-modal-overlay" onClick={closeManageAvailability}>
+          <div className="db-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+            <div className="db-modal-title">{availDoctor.fullName}</div>
+            <div className="db-modal-sub">Working days, hours, and leave dates</div>
+
+            {availLoading ? (
+              <div className="db-empty">Loading…</div>
+            ) : availError ? (
+              <div className="db-empty">{availError}</div>
+            ) : (
+              <>
+                <div style={{ marginBottom: 20 }}>
+                  {WEEKDAYS.map((day) => (
+                    <label
+                      key={day}
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", fontSize: 14 }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!availWorkingDays[day]}
+                        onChange={() => toggleAvailDay(day)}
+                      />
+                      {day}
+                    </label>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+                  <div className="db-field" style={{ flex: 1 }}>
+                    <label className="db-label">Start time</label>
+                    <input
+                      className="db-input"
+                      type="time"
+                      value={availHours.start}
+                      onChange={(e) => setAvailHours({ ...availHours, start: e.target.value })}
+                    />
+                  </div>
+                  <div className="db-field" style={{ flex: 1 }}>
+                    <label className="db-label">End time</label>
+                    <input
+                      className="db-input"
+                      type="time"
+                      value={availHours.end}
+                      onChange={(e) => setAvailHours({ ...availHours, end: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                {scheduleSaveMessage && (
+                  <div style={{ color: "var(--green)", fontSize: 13, marginBottom: 12 }}>{scheduleSaveMessage}</div>
+                )}
+
+                <button className="db-btn primary" disabled={savingSchedule} onClick={saveDoctorSchedule} style={{ marginBottom: 24 }}>
+                  {savingSchedule ? "Saving…" : "Save schedule"}
+                </button>
+
+                <div className="db-panel-title" style={{ marginBottom: 10 }}>Unavailable dates</div>
+
+                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                  <input
+                    className="db-input"
+                    type="date"
+                    value={newUnavailableDate}
+                    onChange={(e) => setNewUnavailableDate(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <button className="db-btn outline sm" onClick={addDoctorUnavailableDate}>
+                    Add
+                  </button>
+                </div>
+
+                {dateActionError && (
+                  <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>{dateActionError}</div>
+                )}
+
+                {availUnavailableDates.length === 0 ? (
+                  <div className="db-empty">No dates marked off.</div>
+                ) : (
+                  <div>
+                    {availUnavailableDates.map((date) => (
+                      <div
+                        key={date}
+                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0" }}
+                      >
+                        <span style={{ fontSize: 14 }}>{date}</span>
+                        <button className="db-btn outline sm" onClick={() => removeDoctorUnavailableDate(date)}>
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            <div className="db-modal-actions">
+              <button className="db-btn outline" onClick={closeManageAvailability}>
                 Close
               </button>
             </div>
