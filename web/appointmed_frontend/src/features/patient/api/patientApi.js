@@ -45,10 +45,10 @@ export const AppointmentsAPI = {
 export const PatientProfileAPI = {
   get: () => apiFetch("/patient/profile"),
 
-  update: (fullName, contactNumber, medicalHistory) =>
+  update: (fullName, contactNumber, dateOfBirth, medicalHistory) =>
     apiFetch("/patient/profile", {
       method: "PUT",
-      body: JSON.stringify({ fullName, contactNumber, medicalHistory }),
+      body: JSON.stringify({ fullName, contactNumber, dateOfBirth, medicalHistory }),
     }),
 
   changePassword: (payload) =>
