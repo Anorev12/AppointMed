@@ -71,7 +71,10 @@ public class AdminService {
                 .filter(p -> needle == null
                         || p.getFullName().toLowerCase(Locale.ROOT).contains(needle)
                         || p.getEmail().toLowerCase(Locale.ROOT).contains(needle))
-                .map(p -> new AdminPatientResponse(p.getId(), p.getFullName(), p.getEmail(), p.getContactNumber()))
+                .map(p -> new AdminPatientResponse(
+                        p.getId(), p.getFullName(), p.getEmail(), p.getContactNumber(),
+                        p.getDateOfBirth() != null ? p.getDateOfBirth().toString() : null
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -100,9 +103,29 @@ public class AdminService {
         patient.setEmail(email);
         patient.setPassword(request.getPassword());
         patient.setContactNumber(request.getContactNumber());
+        patient.setDateOfBirth(parseDateOfBirth(request.getDateOfBirth()));
 
         patient = patientRepository.save(patient);
-        return new AdminPatientResponse(patient.getId(), patient.getFullName(), patient.getEmail(), patient.getContactNumber());
+        return new AdminPatientResponse(
+                patient.getId(), patient.getFullName(), patient.getEmail(), patient.getContactNumber(),
+                patient.getDateOfBirth() != null ? patient.getDateOfBirth().toString() : null
+        );
+    }
+
+    /** Shared "yyyy-MM-dd" parsing/validation for admin-supplied dates of birth. Blank/null is allowed (left unset). */
+    private java.time.LocalDate parseDateOfBirth(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            java.time.LocalDate parsed = java.time.LocalDate.parse(raw.trim());
+            if (parsed.isAfter(java.time.LocalDate.now())) {
+                throw new IllegalArgumentException("Date of birth can't be in the future.");
+            }
+            return parsed;
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new IllegalArgumentException("Date of birth must be a valid date (yyyy-MM-dd).");
+        }
     }
 
     /** Admin removes a patient account. Appointment history rows are left as-is (no cascade), same as everywhere else in this codebase. */

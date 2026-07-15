@@ -64,7 +64,7 @@ public class PatientService {
         return toProfileResponse(patient);
     }
 
-    /** Used by PatientProfileController to update name, contact number, and medical history. */
+    /** Used by PatientProfileController to update name, contact number, date of birth, and medical history. */
     public edu.cit.Verona.AppointMed.appointmed_backend.features.patient.dto.PatientProfileResponse updateProfile(
             Long id, edu.cit.Verona.AppointMed.appointmed_backend.features.patient.dto.PatientProfileUpdateRequest request
     ) {
@@ -75,8 +75,27 @@ public class PatientService {
             throw new IllegalArgumentException("Full name can't be empty.");
         }
 
+        java.time.LocalDate dob = patient.getDateOfBirth();
+        if (request.getDateOfBirth() != null) {
+            String raw = request.getDateOfBirth().trim();
+            if (raw.isEmpty()) {
+                dob = null;
+            } else {
+                try {
+                    java.time.LocalDate parsed = java.time.LocalDate.parse(raw);
+                    if (parsed.isAfter(java.time.LocalDate.now())) {
+                        throw new IllegalArgumentException("Date of birth can't be in the future.");
+                    }
+                    dob = parsed;
+                } catch (java.time.format.DateTimeParseException e) {
+                    throw new IllegalArgumentException("Date of birth must be a valid date (yyyy-MM-dd).");
+                }
+            }
+        }
+
         patient.setFullName(request.getFullName());
         patient.setContactNumber(request.getContactNumber());
+        patient.setDateOfBirth(dob);
         patient.setMedicalHistory(request.getMedicalHistory());
         patient = patientRepository.save(patient);
 

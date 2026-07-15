@@ -6,14 +6,16 @@ public class AdminPatientResponse {
     private String fullName;
     private String email;
     private String contactNumber;
+    private String dateOfBirth; // "yyyy-MM-dd", may be null
 
     public AdminPatientResponse() {}
 
-    public AdminPatientResponse(Long id, String fullName, String email, String contactNumber) {
+    public AdminPatientResponse(Long id, String fullName, String email, String contactNumber, String dateOfBirth) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
         this.contactNumber = contactNumber;
+        this.dateOfBirth = dateOfBirth;
     }
 
     public Long getId() { return id; }
@@ -27,4 +29,7 @@ public class AdminPatientResponse {
 
     public String getContactNumber() { return contactNumber; }
     public void setContactNumber(String contactNumber) { this.contactNumber = contactNumber; }
+
+    public String getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(String dateOfBirth) { this.dateOfBirth = dateOfBirth; }
 }
