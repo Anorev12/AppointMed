@@ -98,7 +98,7 @@ export default function Login({ onLogin, onNavigateToRegister }) {
       // Backend sends { field: "password", message: "Incorrect email or password." }
       // on bad credentials (401), or { field: "...", message: "..." } for validation errors.
       const field = err.data?.field || "password";
-      const message = err.data?.message || "Something went wrong. Try again.";
+      const message = err.data?.message || "Password Incorrect. Please try again.";
       setErrors((e) => ({ ...e, [field]: message }));
     }
   }
