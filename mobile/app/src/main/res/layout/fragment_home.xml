@@ -91,6 +91,7 @@
                     android:padding="16dp">
 
                     <TextView
+                        android:id="@+id/tvNextAppointmentTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Next appointment"
@@ -108,47 +109,13 @@
                         android:textSize="13.5sp"
                         android:visibility="gone" />
 
+                    <!-- One item_next_appointment_row is inflated here per upcoming CONFIRMED appointment. -->
                     <LinearLayout
-                        android:id="@+id/nextAppointmentRow"
+                        android:id="@+id/nextAppointmentsContainer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
                         android:orientation="vertical"
-                        android:visibility="gone">
-
-                        <TextView
-                            android:id="@+id/tvNextDoctor"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/ink"
-                            android:textSize="14.5sp"
-                            android:textStyle="bold"
-                            tools:text="Dr. Reyes · Pediatrics" />
-
-                        <TextView
-                            android:id="@+id/tvNextDateTime"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:textColor="@color/ink_soft"
-                            android:textSize="12.5sp"
-                            tools:text="2026-07-10 · 09:00 · Ref APT-102938" />
-
-                        <TextView
-                            android:id="@+id/tvNextNeedsReschedule"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="4dp"
-                            android:background="@color/amber_soft"
-                            android:textColor="@color/amber"
-                            android:textSize="11.5sp"
-                            android:textStyle="bold"
-                            android:text="⚠ Doctor unavailable — please reschedule"
-                            android:visibility="gone" />
-
-                    </LinearLayout>
+                        android:visibility="gone" />
 
                     <Button
                         android:id="@+id/btnBookAnother"

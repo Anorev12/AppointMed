@@ -3,12 +3,15 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.example.appointmed.R
 import com.example.appointmed.features.patient.DashboardActivity
 import com.example.appointmed.databinding.FragmentHomeBinding
+import com.example.appointmed.databinding.ItemNextAppointmentRowBinding
 import com.example.appointmed.databinding.ItemStatCardBinding
+import com.example.appointmed.features.patient.models.Appointment
 import com.example.appointmed.features.patient.models.toUi
 import com.example.appointmed.core.network.RetrofitClient
 import com.example.appointmed.core.utils.TokenManager
@@ -62,11 +65,11 @@ class HomeFragment : Fragment() {
                     val appointments = apptsResponse.body()!!.map { it.toUi() }
                     val doctorCount = doctorsResponse.body()!!.size
 
-                    // Feature 1: "next appointment" is the nearest upcoming CONFIRMED
-                    // appointment by schedule date/time — never by booking/creation
-                    // order or appointment id. date is "yyyy-MM-dd" and time is
-                    // "HH:mm", both zero-padded, so plain string comparison sorts
-                    // them chronologically.
+                    // Feature 1: the "Next appointment(s)" panel lists every upcoming
+                    // CONFIRMED appointment (not just the nearest one), ordered by
+                    // schedule date/time — never by booking/creation order or
+                    // appointment id. date is "yyyy-MM-dd" and time is "HH:mm", both
+                    // zero-padded, so plain string comparison sorts them chronologically.
                     val today = BookFragment.todayStr()
                     val upcoming = appointments
                         .filter { it.status == "confirmed" && it.date >= today }
@@ -76,17 +79,17 @@ class HomeFragment : Fragment() {
                     bindStatCard(binding.statTotal, appointments.size.toString(), "Total visits on record")
                     bindStatCard(binding.statDoctors, doctorCount.toString(), "Doctors available")
 
+                    binding.tvNextAppointmentTitle.text = if (upcoming.size > 1) "Next appointments" else "Next appointment"
+
                     if (upcoming.isEmpty()) {
                         binding.tvEmptyAppointment.visibility = View.VISIBLE
                         binding.tvEmptyAppointment.text = "You have no upcoming appointments."
-                        binding.nextAppointmentRow.visibility = View.GONE
+                        binding.nextAppointmentsContainer.visibility = View.GONE
                     } else {
-                        val next = upcoming.first()
                         binding.tvEmptyAppointment.visibility = View.GONE
-                        binding.nextAppointmentRow.visibility = View.VISIBLE
-                        binding.tvNextDoctor.text = "${next.doctor} · ${next.specialization}"
-                        binding.tvNextDateTime.text = "${next.date} · ${com.example.appointmed.core.utils.formatTime12h(next.time)} · Ref ${next.id}"
-                        binding.tvNextNeedsReschedule.visibility = if (next.needsReschedule) View.VISIBLE else View.GONE
+                        binding.nextAppointmentsContainer.visibility = View.VISIBLE
+                        binding.nextAppointmentsContainer.removeAllViews()
+                        upcoming.forEach { appt -> addNextAppointmentRow(appt) }
                     }
 
                     binding.tvHomeLoading.visibility = View.GONE
@@ -98,6 +101,29 @@ class HomeFragment : Fragment() {
                 showError("Can't reach the server. Check that it's running and try again.")
             }
         }
+    }
+
+    private fun addNextAppointmentRow(appt: Appointment) {
+        val rowBinding = ItemNextAppointmentRowBinding.inflate(
+            LayoutInflater.from(requireContext()), binding.nextAppointmentsContainer, false
+        )
+        val context = rowBinding.root.context
+
+        rowBinding.tvNextDoctor.text = "${appt.doctor} · ${appt.specialization}"
+        rowBinding.tvNextDateTime.text =
+            "${appt.date} · ${com.example.appointmed.core.utils.formatTime12h(appt.time)} · Ref ${appt.id}"
+
+        if (appt.needsReschedule) {
+            rowBinding.tvNextStatusBadge.text = "⚠ Needs reschedule"
+            rowBinding.tvNextStatusBadge.setBackgroundColor(ContextCompat.getColor(context, R.color.amber_soft))
+            rowBinding.tvNextStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.amber))
+        } else {
+            rowBinding.tvNextStatusBadge.text = "Confirmed"
+            rowBinding.tvNextStatusBadge.setBackgroundColor(ContextCompat.getColor(context, R.color.success_soft))
+            rowBinding.tvNextStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.success))
+        }
+
+        binding.nextAppointmentsContainer.addView(rowBinding.root)
     }
 
     private fun showError(message: String) {

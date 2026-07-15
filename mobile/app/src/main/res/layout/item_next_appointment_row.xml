@@ -1,6 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <TextView
+        android:id="@+id/tvNextDoctor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/ink"
+        android:textSize="14.5sp"
+        android:textStyle="bold"
+        tools:text="Dr. Reyes · Pediatrics" />
+
+    <TextView
+        android:id="@+id/tvNextDateTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="@color/ink_soft"
+        android:textSize="12.5sp"
+        tools:text="2026-07-10 · 09:00 · Ref APT-102938" />
+
+    <TextView
+        android:id="@+id/tvNextStatusBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="4dp"
+        android:textSize="11.5sp"
+        android:textStyle="bold"
+        tools:text="Confirmed"
+        tools:background="@color/success_soft"
+        tools:textColor="@color/success" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="12dp"
+        android:background="@color/border" />
+
+</LinearLayout>
