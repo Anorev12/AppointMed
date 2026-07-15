@@ -144,7 +144,7 @@ class BookFragment : Fragment() {
         binding.tvBookingSummary.text = when {
             selectedDoctor == null -> "Select a doctor to continue."
             selectedTime == null -> "${selectedDoctor!!.name} · select a date and time"
-            else -> "${selectedDoctor!!.name} · $selectedDate · $selectedTime"
+            else -> "${selectedDoctor!!.name} · $selectedDate · ${com.example.appointmed.core.utils.formatTime12h(selectedTime)}"
         }
         binding.btnConfirm.isEnabled = selectedDoctor != null && selectedTime != null && !booking
     }

@@ -24,4 +24,5 @@ public class PatientCreateRequest {
 
     public String getDateOfBirth() { return dateOfBirth; }
     public void setDateOfBirth(String dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+
 }
