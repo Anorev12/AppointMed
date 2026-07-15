@@ -1,4 +1,5 @@
 package com.example.appointmed.features.patient.fragments
+
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -173,7 +174,8 @@ class BookFragment : Fragment() {
                     binding.btnConfirm.visibility = View.GONE
                 } else {
                     binding.tvBookError.visibility = View.VISIBLE
-                    binding.tvBookError.text = "Couldn't book that appointment. It may have just been taken — try another slot."
+                    binding.tvBookError.text = response.errorBody()?.string()
+                        ?: "Couldn't book that appointment. It may have just been taken — try another slot."
                     binding.btnConfirm.isEnabled = true
                     loadSlots() // refresh in case that slot is now reserved
                 }
