@@ -65,6 +65,11 @@ public class DoctorService {
         return doctorRepository.findAll();
     }
 
+    /** Used by admin endpoints (e.g. availability management) to validate a doctor id before acting on it. */
+    public boolean existsById(Long id) {
+        return doctorRepository.existsById(id);
+    }
+
     /**
      * Doctor-initiated password change — requires the current password to
      * be supplied and correct, and the new password to be confirmed, before

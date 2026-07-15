@@ -4,6 +4,9 @@ import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.dto.AdminCrea
 import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.dto.DoctorStatusUpdateRequest;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.dto.PasswordChangeRequest;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.AppointmentService;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.availability.AvailabilityService;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.availability.dto.AvailabilityUpdateRequest;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.availability.dto.UnavailableDateRequest;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.DoctorNameFormatter;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.dto.DoctorCreateRequest;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.dto.DoctorResponse;
@@ -30,7 +33,9 @@ import org.springframework.web.bind.annotation.*;
  * here rather than re-implementing that logic inside the admin slice.
  *
  * Covers: FR-028, FR-030, FR-032, FR-034, FR-035 (overview, user management,
- * reports) and FR-016 (override doctor availability / appointments).
+ * reports) and FR-016 (admin can view, override, and manage any doctor's
+ * working days/hours and unavailable dates — not just override individual
+ * appointments).
  */
 @RestController
 @RequestMapping("/api/admin")
@@ -40,13 +45,16 @@ public class AdminController {
     private final DoctorService doctorService;
     private final AdminService adminService;
     private final AppointmentService appointmentService;
+    private final AvailabilityService availabilityService;
     private final JwtUtil jwtUtil;
 
     public AdminController(DoctorService doctorService, AdminService adminService,
-                            AppointmentService appointmentService, JwtUtil jwtUtil) {
+                            AppointmentService appointmentService, AvailabilityService availabilityService,
+                            JwtUtil jwtUtil) {
         this.doctorService = doctorService;
         this.adminService = adminService;
         this.appointmentService = appointmentService;
+        this.availabilityService = availabilityService;
         this.jwtUtil = jwtUtil;
     }
 
@@ -225,6 +233,99 @@ public class AdminController {
             Long adminId = jwtUtil.extractId(authHeader.substring(7));
             adminService.changeOwnPassword(adminId, request);
             return ResponseEntity.ok("Password updated successfully.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // ---------- Doctor availability (FR-016: manage and override doctor availability) ----------
+
+    /** View any doctor's working days/hours and unavailable dates. */
+    @GetMapping("/doctors/{id}/availability")
+    public ResponseEntity<?> getDoctorAvailability(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable Long id
+    ) {
+        ResponseEntity<?> authError = requireAdmin(authHeader);
+        if (authError != null) return authError;
+
+        try {
+            if (!doctorService.existsById(id)) {
+                return ResponseEntity.badRequest().body("Doctor not found.");
+            }
+            return ResponseEntity.ok(availabilityService.getAvailability(id));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Admin overrides a doctor's working days/hours directly — e.g. correcting
+     * a schedule the doctor set up wrong, or adjusting it on their behalf.
+     * Reuses the same AvailabilityService the doctor's own endpoint uses;
+     * the only difference is the doctor id comes from the path, not the
+     * caller's own JWT.
+     */
+    @PutMapping("/doctors/{id}/availability")
+    public ResponseEntity<?> updateDoctorAvailability(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable Long id,
+            @RequestBody AvailabilityUpdateRequest request
+    ) {
+        ResponseEntity<?> authError = requireAdmin(authHeader);
+        if (authError != null) return authError;
+
+        try {
+            if (!doctorService.existsById(id)) {
+                return ResponseEntity.badRequest().body("Doctor not found.");
+            }
+            return ResponseEntity.ok(availabilityService.updateSchedule(id, request));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Admin marks a date unavailable on a doctor's behalf. Goes through the
+     * exact same AvailabilityService.addUnavailableDate() the doctor's own
+     * endpoint uses — so FR-020 (flagging affected appointments and emailing
+     * patients) fires automatically here too, not just when the doctor does
+     * it themselves.
+     */
+    @PostMapping("/doctors/{id}/availability/unavailable-dates")
+    public ResponseEntity<?> addDoctorUnavailableDate(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable Long id,
+            @RequestBody UnavailableDateRequest request
+    ) {
+        ResponseEntity<?> authError = requireAdmin(authHeader);
+        if (authError != null) return authError;
+
+        try {
+            if (!doctorService.existsById(id)) {
+                return ResponseEntity.badRequest().body("Doctor not found.");
+            }
+            return ResponseEntity.ok(availabilityService.addUnavailableDate(id, request.getDate()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /** Admin removes a doctor's unavailable-date entry — e.g. their leave plans changed. */
+    @DeleteMapping("/doctors/{id}/availability/unavailable-dates/{date}")
+    public ResponseEntity<?> removeDoctorUnavailableDate(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable Long id,
+            @PathVariable String date
+    ) {
+        ResponseEntity<?> authError = requireAdmin(authHeader);
+        if (authError != null) return authError;
+
+        try {
+            if (!doctorService.existsById(id)) {
+                return ResponseEntity.badRequest().body("Doctor not found.");
+            }
+            return ResponseEntity.ok(availabilityService.removeUnavailableDate(id, date));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
