@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:maxHeight="520dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/tvAvailLoading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Loading schedule…"
+            android:textColor="@color/ink_soft"
+            android:textSize="13.5sp" />
+
+        <TextView
+            android:id="@+id/tvAvailError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/danger"
+            android:textSize="13.5sp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/availabilityContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Working days"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <CheckBox android:id="@+id/cbMon" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Mon" android:textColor="@color/ink" />
+            <CheckBox android:id="@+id/cbTue" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Tue" android:textColor="@color/ink" />
+            <CheckBox android:id="@+id/cbWed" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Wed" android:textColor="@color/ink" />
+            <CheckBox android:id="@+id/cbThu" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Thu" android:textColor="@color/ink" />
+            <CheckBox android:id="@+id/cbFri" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Fri" android:textColor="@color/ink" />
+            <CheckBox android:id="@+id/cbSat" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sat" android:textColor="@color/ink" />
+            <CheckBox android:id="@+id/cbSun" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sun" android:textColor="@color/ink" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="14dp">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:hint="Start time">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etStartTime"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:cursorVisible="false" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="End time">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etEndTime"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:cursorVisible="false" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnSaveSchedule"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Save schedule"
+                android:textAllCaps="false"
+                android:backgroundTint="@color/stamp"
+                android:textColor="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/tvSaveMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/ink_soft"
+                android:textSize="12.5sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Unavailable dates"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:hint="Date">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etNewUnavailableDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:cursorVisible="false" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <Button
+                    android:id="@+id/btnAddUnavailableDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Add"
+                    android:textAllCaps="false"
+                    android:backgroundTint="@color/stamp"
+                    android:textColor="#FFFFFF" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvDateActionError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="@color/danger"
+                android:textSize="12.5sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvNoUnavailableDates"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="No dates marked off."
+                android:textColor="@color/ink_soft"
+                android:textSize="13sp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvUnavailableDates"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
