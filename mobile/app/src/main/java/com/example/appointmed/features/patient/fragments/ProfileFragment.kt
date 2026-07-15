@@ -1,5 +1,6 @@
 package com.example.appointmed.features.patient.fragments
 import android.app.AlertDialog
+import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,6 +14,8 @@ import com.example.appointmed.features.patient.models.PasswordChangeRequest
 import com.example.appointmed.features.patient.models.PatientProfileUpdateRequest
 import com.example.appointmed.core.network.RetrofitClient
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import java.util.Locale
 
 /**
  * Mirrors the React PatientDashboard's profile tab — wired to the real
@@ -38,8 +41,38 @@ class ProfileFragment : Fragment() {
         binding.btnLogout.setOnClickListener {
             (requireActivity() as DashboardActivity).logout()
         }
+        binding.etDob.setOnClickListener { showDobPicker() }
 
         loadProfile()
+    }
+
+    /** Opens a date picker seeded with the current value (or today), and writes "yyyy-MM-dd" back into etDob. */
+    private fun showDobPicker() {
+        val calendar = Calendar.getInstance()
+        val current = binding.etDob.text?.toString().orEmpty()
+        if (current.isNotBlank()) {
+            val parts = current.split("-")
+            if (parts.size == 3) {
+                val year = parts[0].toIntOrNull()
+                val month = parts[1].toIntOrNull()
+                val day = parts[2].toIntOrNull()
+                if (year != null && month != null && day != null) {
+                    calendar.set(year, month - 1, day)
+                }
+            }
+        }
+
+        val dialog = DatePickerDialog(
+            requireContext(),
+            { _, year, month, dayOfMonth ->
+                binding.etDob.setText(String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, dayOfMonth))
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+        dialog.datePicker.maxDate = System.currentTimeMillis()
+        dialog.show()
     }
 
     private fun showChangePasswordDialog() {
@@ -147,6 +180,7 @@ class ProfileFragment : Fragment() {
         val request = PatientProfileUpdateRequest(
             fullName = fullName,
             contactNumber = binding.etContact.text.toString(),
+            dateOfBirth = binding.etDob.text.toString(),
             medicalHistory = binding.etMedicalHistory.text.toString()
         )
 
