@@ -9,6 +9,7 @@ import com.example.appointmed.features.admin.models.AdminDoctor
 class AdminDoctorAdapter(
     private val doctors: List<AdminDoctor>,
     private val onToggleStatus: (AdminDoctor) -> Unit,
+    private val onManageAvailability: (AdminDoctor) -> Unit,
     private val onDelete: (AdminDoctor) -> Unit
 ) : RecyclerView.Adapter<AdminDoctorAdapter.ViewHolder>() {
 
@@ -37,6 +38,7 @@ class AdminDoctorAdapter(
 
         holder.binding.btnToggleDoctorStatus.text = if (isActive) "Mark on leave" else "Mark active"
         holder.binding.btnToggleDoctorStatus.setOnClickListener { onToggleStatus(doctor) }
+        holder.binding.btnManageDoctorAvailability.setOnClickListener { onManageAvailability(doctor) }
         holder.binding.btnDeleteDoctor.setOnClickListener { onDelete(doctor) }
     }
 

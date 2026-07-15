@@ -1,4 +1,5 @@
 package com.example.appointmed.features.admin.models
 
-class UnavailableDateRequest {
-}
+data class UnavailableDateRequest(
+    val date: String
+)

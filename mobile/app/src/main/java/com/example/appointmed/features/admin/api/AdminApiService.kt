@@ -3,11 +3,15 @@ import com.example.appointmed.features.admin.models.AdminAppointmentApiResponse
 import com.example.appointmed.features.admin.models.AdminCreateRequest
 import com.example.appointmed.features.admin.models.AdminPatientApiResponse
 import com.example.appointmed.features.admin.models.AdminSimpleResponse
+import com.example.appointmed.features.admin.models.AvailabilityResponse
 import com.example.appointmed.features.admin.models.DoctorCreateRequest
 import com.example.appointmed.features.admin.models.DoctorResponse
 import com.example.appointmed.features.admin.models.DoctorStatusUpdateRequest
 import com.example.appointmed.features.admin.models.PasswordChangeRequest
 import com.example.appointmed.features.admin.models.PatientCreateRequest
+import com.example.appointmed.features.admin.models.UnavailableDateRequest
+import com.example.appointmed.features.admin.models.UnavailableDatesResponse
+import com.example.appointmed.features.admin.models.UpdateScheduleRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -62,4 +66,27 @@ interface AdminApiService {
 
     @PUT("api/admin/password")
     suspend fun changeOwnPassword(@Body request: PasswordChangeRequest): Response<String>
+
+    // ---- Doctor availability (FR-016: admin can view and override any doctor's schedule) ----
+
+    @GET("api/admin/doctors/{id}/availability")
+    suspend fun getDoctorAvailability(@Path("id") doctorId: Long): Response<AvailabilityResponse>
+
+    @PUT("api/admin/doctors/{id}/availability")
+    suspend fun updateDoctorAvailability(
+        @Path("id") doctorId: Long,
+        @Body request: UpdateScheduleRequest
+    ): Response<AvailabilityResponse>
+
+    @POST("api/admin/doctors/{id}/availability/unavailable-dates")
+    suspend fun addDoctorUnavailableDate(
+        @Path("id") doctorId: Long,
+        @Body request: UnavailableDateRequest
+    ): Response<UnavailableDatesResponse>
+
+    @DELETE("api/admin/doctors/{id}/availability/unavailable-dates/{date}")
+    suspend fun removeDoctorUnavailableDate(
+        @Path("id") doctorId: Long,
+        @Path("date") date: String
+    ): Response<UnavailableDatesResponse>
 }

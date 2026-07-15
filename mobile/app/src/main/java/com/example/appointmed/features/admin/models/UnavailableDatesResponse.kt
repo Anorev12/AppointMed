@@ -1,4 +1,5 @@
 package com.example.appointmed.features.admin.models
 
-class UnavailableDatesResponse {
-}
+data class UnavailableDatesResponse(
+    val unavailableDates: List<String>
+)

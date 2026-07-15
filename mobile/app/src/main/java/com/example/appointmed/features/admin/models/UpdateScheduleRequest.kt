@@ -1,4 +1,6 @@
 package com.example.appointmed.features.admin.models
-
-class UpdateScheduleRequest {
-}
+data class UpdateScheduleRequest(
+    val workingDays: List<String>,
+    val startTime: String,
+    val endTime: String
+)
