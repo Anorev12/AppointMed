@@ -22,5 +22,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     List<Appointment> findByDoctorIdAndDateAndStatus(Long doctorId, LocalDate date, String status);
 
     boolean existsByDoctorIdAndDateAndTimeAndStatus(Long doctorId, LocalDate date, LocalTime time, String status);
-}
 
+    // Used to block a patient from holding two CONFIRMED appointments (even with
+    // different doctors) at the same date/time — prevents scheduling conflicts.
+    boolean existsByPatientIdAndDateAndTimeAndStatus(Long patientId, LocalDate date, LocalTime time, String status);
+}

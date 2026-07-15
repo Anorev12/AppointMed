@@ -83,7 +83,7 @@ public class AppointmentService {
         LocalDate date = parseDate(request.getDate());
         LocalTime time = parseTime(request.getTime());
 
-        validateSlot(doctor.getId(), date, time);
+        validateSlot(doctor.getId(), date, time, patientId);
 
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new IllegalArgumentException("Patient not found."));
@@ -242,7 +242,7 @@ public class AppointmentService {
             throw new IllegalArgumentException("That's already your current appointment time.");
         }
 
-        validateSlot(appointment.getDoctorId(), newDate, newTime);
+        validateSlot(appointment.getDoctorId(), newDate, newTime, patientId);
 
         String oldDateStr = appointment.getDate().toString();
         String oldTimeStr = edu.cit.Verona.AppointMed.appointmed_backend.features.notification.NotificationTimeFormatter.format(appointment.getTime());
@@ -380,7 +380,7 @@ public class AppointmentService {
     }
 
     /** Re-validates a requested slot server-side — never trust that the frontend only offered valid times. */
-    private void validateSlot(Long doctorId, LocalDate date, LocalTime time) {
+    private void validateSlot(Long doctorId, LocalDate date, LocalTime time, Long patientId) {
         if (date.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Can't book an appointment in the past.");
         }
@@ -406,6 +406,12 @@ public class AppointmentService {
 
         if (appointmentRepository.existsByDoctorIdAndDateAndTimeAndStatus(doctorId, date, time, "CONFIRMED")) {
             throw new IllegalArgumentException("That slot was just booked by someone else. Please pick another.");
+        }
+
+        // Prevent a patient from holding two CONFIRMED appointments — even with
+        // different doctors — at the same date and time.
+        if (appointmentRepository.existsByPatientIdAndDateAndTimeAndStatus(patientId, date, time, "CONFIRMED")) {
+            throw new IllegalArgumentException("You already have a confirmed appointment at this date and time with another doctor.");
         }
     }
 
