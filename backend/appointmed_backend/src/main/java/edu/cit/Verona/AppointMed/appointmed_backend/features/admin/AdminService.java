@@ -1,5 +1,6 @@
 package edu.cit.Verona.AppointMed.appointmed_backend.features.admin;
 
+import edu.cit.Verona.AppointMed.appointmed_backend.Security.PasswordVerifier;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.dto.AdminCreateRequest;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.dto.AdminPatientResponse;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.dto.AdminResponse;
@@ -33,13 +34,16 @@ public class AdminService {
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
     private final NotificationRepository notificationRepository;
+    private final PasswordVerifier passwordVerifier;
 
     public AdminService(AdminRepository adminRepository, PatientRepository patientRepository,
-                         DoctorRepository doctorRepository, NotificationRepository notificationRepository) {
+                         DoctorRepository doctorRepository, NotificationRepository notificationRepository,
+                         PasswordVerifier passwordVerifier) {
         this.adminRepository = adminRepository;
         this.patientRepository = patientRepository;
         this.doctorRepository = doctorRepository;
         this.notificationRepository = notificationRepository;
+        this.passwordVerifier = passwordVerifier;
     }
 
     /** Called by the unified login endpoint once it's already checked the email ends in the admin domain. */
@@ -47,8 +51,13 @@ public class AdminService {
         Admin admin = adminRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Incorrect email or password."));
 
-        if (!admin.getPassword().equals(rawPassword)) {
+        if (!passwordVerifier.matches(rawPassword, admin.getPassword())) {
             throw new IllegalArgumentException("Incorrect email or password.");
+        }
+
+        if (!passwordVerifier.isBcryptHash(admin.getPassword())) {
+            admin.setPassword(passwordVerifier.hash(rawPassword));
+            adminRepository.save(admin);
         }
 
         return admin;
@@ -101,7 +110,7 @@ public class AdminService {
         Patient patient = new Patient();
         patient.setFullName(request.getFullName());
         patient.setEmail(email);
-        patient.setPassword(request.getPassword());
+        patient.setPassword(passwordVerifier.hash(request.getPassword()));
         patient.setContactNumber(request.getContactNumber());
         patient.setDateOfBirth(parseDateOfBirth(request.getDateOfBirth()));
 
@@ -207,7 +216,7 @@ public class AdminService {
         Admin admin = new Admin();
         admin.setFullName(request.getFullName());
         admin.setEmail(email);
-        admin.setPassword(request.getPassword());
+        admin.setPassword(passwordVerifier.hash(request.getPassword()));
 
         admin = adminRepository.save(admin);
         return new AdminResponse(admin.getId(), admin.getFullName(), admin.getEmail());
@@ -222,7 +231,7 @@ public class AdminService {
         Admin admin = adminRepository.findById(adminId)
                 .orElseThrow(() -> new IllegalArgumentException("Admin not found."));
 
-        if (request.getOldPassword() == null || !admin.getPassword().equals(request.getOldPassword())) {
+        if (!passwordVerifier.matches(request.getOldPassword(), admin.getPassword())) {
             throw new IllegalArgumentException("Current password is incorrect.");
         }
         if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
@@ -232,7 +241,7 @@ public class AdminService {
             throw new IllegalArgumentException("New password and confirmation don't match.");
         }
 
-        admin.setPassword(request.getNewPassword());
+        admin.setPassword(passwordVerifier.hash(request.getNewPassword()));
         adminRepository.save(admin);
     }
 

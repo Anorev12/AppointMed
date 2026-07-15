@@ -1,5 +1,6 @@
 package edu.cit.Verona.AppointMed.appointmed_backend.features.patient;
 
+import edu.cit.Verona.AppointMed.appointmed_backend.Security.PasswordVerifier;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.entity.Patient;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.repository.PatientRepository;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.dto.PatientRegisterRequest;
@@ -9,9 +10,11 @@ import org.springframework.stereotype.Service;
 public class PatientService {
 
     private final PatientRepository patientRepository;
+    private final PasswordVerifier passwordVerifier;
 
-    public PatientService(PatientRepository patientRepository) {
+    public PatientService(PatientRepository patientRepository, PasswordVerifier passwordVerifier) {
         this.patientRepository = patientRepository;
+        this.passwordVerifier = passwordVerifier;
     }
 
     public Patient registerPatient(PatientRegisterRequest request) {
@@ -30,7 +33,7 @@ public class PatientService {
         Patient patient = new Patient();
         patient.setFullName(request.getFullName());
         patient.setEmail(email);
-        patient.setPassword(request.getPassword());
+        patient.setPassword(passwordVerifier.hash(request.getPassword()));
         patient.setDateOfBirth(request.getDateOfBirth());
         patient.setContactNumber(request.getContactNumber());
         patient.setMedicalHistory(request.getMedicalHistory());
@@ -43,8 +46,15 @@ public class PatientService {
         Patient patient = patientRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Incorrect email or password."));
 
-        if (!patient.getPassword().equals(rawPassword)) {
+        if (!passwordVerifier.matches(rawPassword, patient.getPassword())) {
             throw new IllegalArgumentException("Incorrect email or password.");
+        }
+
+        // Lazy migration: upgrade any pre-BCrypt (plaintext) row the moment
+        // its owner successfully logs in, so no manual data migration is needed.
+        if (!passwordVerifier.isBcryptHash(patient.getPassword())) {
+            patient.setPassword(passwordVerifier.hash(rawPassword));
+            patientRepository.save(patient);
         }
 
         return patient;
@@ -123,7 +133,7 @@ public class PatientService {
         Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Patient not found."));
 
-        if (request.getOldPassword() == null || !patient.getPassword().equals(request.getOldPassword())) {
+        if (!passwordVerifier.matches(request.getOldPassword(), patient.getPassword())) {
             throw new IllegalArgumentException("Current password is incorrect.");
         }
         if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
@@ -133,7 +143,7 @@ public class PatientService {
             throw new IllegalArgumentException("New password and confirmation don't match.");
         }
 
-        patient.setPassword(request.getNewPassword());
+        patient.setPassword(passwordVerifier.hash(request.getNewPassword()));
         patientRepository.save(patient);
     }
 }

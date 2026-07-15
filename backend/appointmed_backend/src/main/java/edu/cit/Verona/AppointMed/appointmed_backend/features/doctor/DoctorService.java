@@ -1,5 +1,6 @@
 package edu.cit.Verona.AppointMed.appointmed_backend.features.doctor;
 
+import edu.cit.Verona.AppointMed.appointmed_backend.Security.PasswordVerifier;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.dto.DoctorCreateRequest;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.entity.Doctor;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.repository.DoctorRepository;
@@ -11,9 +12,11 @@ public class DoctorService {
     private static final String REQUIRED_DOMAIN = "@appointmeddoctor.com";
 
     private final DoctorRepository doctorRepository;
+    private final PasswordVerifier passwordVerifier;
 
-    public DoctorService(DoctorRepository doctorRepository) {
+    public DoctorService(DoctorRepository doctorRepository, PasswordVerifier passwordVerifier) {
         this.doctorRepository = doctorRepository;
+        this.passwordVerifier = passwordVerifier;
     }
 
     /** Only ever called from AdminController — doctors cannot self-register. */
@@ -32,7 +35,7 @@ public class DoctorService {
         Doctor doctor = new Doctor();
         doctor.setFullName(request.getFullName());
         doctor.setEmail(email);
-        doctor.setPassword(request.getPassword());
+        doctor.setPassword(passwordVerifier.hash(request.getPassword()));
         doctor.setSpecialization(request.getSpecialization());
 
         return doctorRepository.save(doctor);
@@ -46,8 +49,13 @@ public class DoctorService {
         Doctor doctor = doctorRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Incorrect email or password."));
 
-        if (!doctor.getPassword().equals(rawPassword)) {
+        if (!passwordVerifier.matches(rawPassword, doctor.getPassword())) {
             throw new IllegalArgumentException("Incorrect email or password.");
+        }
+
+        if (!passwordVerifier.isBcryptHash(doctor.getPassword())) {
+            doctor.setPassword(passwordVerifier.hash(rawPassword));
+            doctorRepository.save(doctor);
         }
 
         return doctor;
@@ -79,7 +87,7 @@ public class DoctorService {
         Doctor doctor = doctorRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Doctor not found."));
 
-        if (request.getOldPassword() == null || !doctor.getPassword().equals(request.getOldPassword())) {
+        if (!passwordVerifier.matches(request.getOldPassword(), doctor.getPassword())) {
             throw new IllegalArgumentException("Current password is incorrect.");
         }
         if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
@@ -89,7 +97,7 @@ public class DoctorService {
             throw new IllegalArgumentException("New password and confirmation don't match.");
         }
 
-        doctor.setPassword(request.getNewPassword());
+        doctor.setPassword(passwordVerifier.hash(request.getNewPassword()));
         doctorRepository.save(doctor);
     }
 }
