@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import Login from "./features/auth/Login";
 import Register from "./features/auth/Register";
 import PatientDashboard from "./features/patient/PatientDashboard";
@@ -7,16 +8,16 @@ import AdminDashboard from "./features/admin/AdminDashboard";
 import { AuthAPI } from "./features/auth/api/authApi";
 import { getToken, clearToken } from "./shared/api/httpClient";
 
-function viewForRole(role) {
-  if (role === "DOCTOR") return "doctor";
-  if (role === "ADMIN") return "admin";
-  return "patient";
+function pathForRole(role) {
+  if (role === "DOCTOR") return "/doctor";
+  if (role === "ADMIN") return "/admin";
+  return "/patient";
 }
 
-function App() {
-  const [view, setView] = useState("login");
+function AppRoutes() {
   const [user, setUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
+  const navigate = useNavigate();
 
   // On refresh, re-verify the token against the server (via AuthAPI.me,
   // which hits /api/auth/me) instead of trusting whatever's cached in
@@ -35,14 +36,15 @@ function App() {
       .then((data) => {
         localStorage.setItem("user", JSON.stringify(data));
         setUser(data);
-        setView(viewForRole(data.role));
+        navigate(pathForRole(data.role), { replace: true });
       })
       .catch(() => {
         localStorage.removeItem("user");
         clearToken();
-        setView("login");
+        navigate("/login", { replace: true });
       })
       .finally(() => setCheckingSession(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleAuthSuccess(data) {
@@ -51,14 +53,14 @@ function App() {
     // this just keeps the display info (name, role) alongside it.
     localStorage.setItem("user", JSON.stringify(data));
     setUser(data);
-    setView(viewForRole(data.role));
+    navigate(pathForRole(data.role), { replace: true });
   }
 
   function handleLogout() {
     localStorage.removeItem("user");
     clearToken();
     setUser(null);
-    setView("login");
+    navigate("/login", { replace: true });
   }
 
   if (checkingSession) {
@@ -69,34 +71,76 @@ function App() {
     );
   }
 
+  const homePath = user ? pathForRole(user.role) : "/login";
+
   return (
-    <div className="App">
-      {view === "login" && (
-        <Login
-          onLogin={handleAuthSuccess}
-          onNavigateToRegister={() => setView("register")}
-        />
-      )}
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          user ? (
+            <Navigate to={homePath} replace />
+          ) : (
+            <Login onLogin={handleAuthSuccess} onNavigateToRegister={() => navigate("/register")} />
+          )
+        }
+      />
 
-      {view === "register" && (
-        <Register
-          onRegister={handleAuthSuccess}
-          onNavigateToLogin={() => setView("login")}
-        />
-      )}
+      <Route
+        path="/register"
+        element={
+          user ? (
+            <Navigate to={homePath} replace />
+          ) : (
+            <Register onRegister={handleAuthSuccess} onNavigateToLogin={() => navigate("/login")} />
+          )
+        }
+      />
 
-      {view === "patient" && (
-        <PatientDashboard patientName={user?.fullName} onLogout={handleLogout} />
-      )}
+      <Route
+        path="/patient/*"
+        element={
+          user?.role === "PATIENT" ? (
+            <PatientDashboard patientName={user.fullName} onLogout={handleLogout} />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
 
-      {view === "doctor" && (
-        <DoctorDashboard doctorName={user?.fullName} onLogout={handleLogout} />
-      )}
+      <Route
+        path="/doctor/*"
+        element={
+          user?.role === "DOCTOR" ? (
+            <DoctorDashboard doctorName={user.fullName} onLogout={handleLogout} />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
 
-      {view === "admin" && (
-        <AdminDashboard adminName={user?.fullName} onLogout={handleLogout} />
-      )}
-    </div>
+      <Route
+        path="/admin/*"
+        element={
+          user?.role === "ADMIN" ? (
+            <AdminDashboard adminName={user.fullName} onLogout={handleLogout} />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
+      <Route path="/" element={<Navigate to={homePath} replace />} />
+      <Route path="*" element={<Navigate to={homePath} replace />} />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   );
 }
 

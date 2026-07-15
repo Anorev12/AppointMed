@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import "../../shared/styles/Appointmed.css";
 import { AdminAPI } from "./api/adminApi";
 import { formatTime12h } from "../../shared/utils/format";
@@ -32,7 +33,32 @@ function todayStr() {
 }
 
 export default function AdminDashboard({ adminName = "Admin", onLogout }) {
-  const [view, setView] = useState("overview"); // overview | patients | doctors | admins | appointments | password
+  const location = useLocation();
+const navigate = useNavigate();
+
+const PATH_TO_VIEW = {
+  "/admin": "overview",
+  "/admin/overview": "overview",
+  "/admin/appointments": "appointments",
+  "/admin/patients": "patients",
+  "/admin/doctors": "doctors",
+  "/admin/admins": "admins",
+  "/admin/password": "password",
+};
+const VIEW_TO_PATH = {
+  overview: "/admin/overview",
+  appointments: "/admin/appointments",
+  patients: "/admin/patients",
+  doctors: "/admin/doctors",
+  admins: "/admin/admins",
+  password: "/admin/password",
+};
+
+const view = PATH_TO_VIEW[location.pathname] || "overview";
+
+function setView(next) {
+  navigate(VIEW_TO_PATH[next] || "/admin/overview");
+}
   const [search, setSearch] = useState("");
 
   // ---- Patients ----

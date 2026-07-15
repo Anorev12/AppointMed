@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import "../../shared/styles/Appointmed.css";
 import { DoctorsAPI, AppointmentsAPI, PatientProfileAPI } from "./api/patientApi";
 import { formatTime12h } from "../../shared/utils/format";
@@ -22,7 +23,29 @@ function todayStr() {
 }
 
 export default function PatientDashboard({ patientName = "Patient", onLogout }) {
-  const [view, setView] = useState("home"); // home | book | history | profile
+  const location = useLocation();
+const navigate = useNavigate();
+
+const PATH_TO_VIEW = {
+  "/patient": "home",
+  "/patient/book": "book",
+  "/patient/appointments": "history",
+  "/patient/profile": "profile",
+  "/patient/password": "password",
+};
+const VIEW_TO_PATH = {
+  home: "/patient",
+  book: "/patient/book",
+  history: "/patient/appointments",
+  profile: "/patient/profile",
+  password: "/patient/password",
+};
+
+const view = PATH_TO_VIEW[location.pathname] || "home";
+
+function setView(next) {
+  navigate(VIEW_TO_PATH[next] || "/patient");
+}
 
   // ---- Doctors ----
   const [doctors, setDoctors] = useState([]);

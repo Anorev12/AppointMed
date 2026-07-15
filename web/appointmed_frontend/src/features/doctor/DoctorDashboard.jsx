@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import "../../shared/styles/Appointmed.css";
 import { AvailabilityAPI } from "./api/availabilityApi";
 import { DoctorAppointmentsAPI } from "./api/appointmentsApi";
@@ -30,7 +31,26 @@ function daysArrayToMap(daysArray) {
 }
 
 export default function DoctorDashboard({ doctorName = "Dr. Reyes", onLogout }) {
-  const [view, setView] = useState("schedule"); // schedule | availability
+  const location = useLocation();
+const navigate = useNavigate();
+
+const PATH_TO_VIEW = {
+  "/doctor": "schedule",
+  "/doctor/schedule": "schedule",
+  "/doctor/availability": "availability",
+  "/doctor/password": "password",
+};
+const VIEW_TO_PATH = {
+  schedule: "/doctor/schedule",
+  availability: "/doctor/availability",
+  password: "/doctor/password",
+};
+
+const view = PATH_TO_VIEW[location.pathname] || "schedule";
+
+function setView(next) {
+  navigate(VIEW_TO_PATH[next] || "/doctor/schedule");
+}
   const [appointments, setAppointments] = useState([]);
   const [apptsLoading, setApptsLoading] = useState(true);
   const [apptsError, setApptsError] = useState("");
