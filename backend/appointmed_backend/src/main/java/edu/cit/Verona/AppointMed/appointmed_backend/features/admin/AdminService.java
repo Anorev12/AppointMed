@@ -3,23 +3,34 @@ package edu.cit.Verona.AppointMed.appointmed_backend.features.admin;
 import edu.cit.Verona.AppointMed.appointmed_backend.Security.PasswordVerifier;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.dto.AdminCreateRequest;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.dto.AdminPatientResponse;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.dto.AdminReportResponse;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.dto.AdminResponse;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.dto.PasswordChangeRequest;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.entity.Admin;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.admin.repository.AdminRepository;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.entity.Appointment;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.appointment.repository.AppointmentRepository;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.DoctorNameFormatter;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.dto.DoctorResponse;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.entity.Doctor;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.repository.DoctorRepository;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.notification.dto.NotificationResponse;
+import edu.cit.Verona.AppointMed.appointmed_backend.features.notification.entity.Notification;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.notification.repository.NotificationRepository;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.entity.Patient;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.dto.PatientCreateRequest;
 import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.repository.PatientRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,15 +45,17 @@ public class AdminService {
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
     private final NotificationRepository notificationRepository;
+    private final AppointmentRepository appointmentRepository;
     private final PasswordVerifier passwordVerifier;
 
     public AdminService(AdminRepository adminRepository, PatientRepository patientRepository,
                          DoctorRepository doctorRepository, NotificationRepository notificationRepository,
-                         PasswordVerifier passwordVerifier) {
+                         AppointmentRepository appointmentRepository, PasswordVerifier passwordVerifier) {
         this.adminRepository = adminRepository;
         this.patientRepository = patientRepository;
         this.doctorRepository = doctorRepository;
         this.notificationRepository = notificationRepository;
+        this.appointmentRepository = appointmentRepository;
         this.passwordVerifier = passwordVerifier;
     }
 
@@ -257,4 +270,71 @@ public class AdminService {
                 .map(NotificationResponse::new)
                 .collect(Collectors.toList());
     }
+
+    /**
+     * FR-035: "The system shall allow administrators to view reports on
+     * appointment statistics and system activity."
+     *
+     * Everything here is computed from data that already exists — no new
+     * tables. Kept in AdminService (rather than a separate reporting
+     * feature slice) because it's a read-only aggregation over data three
+     * other slices already own, exactly like listNotifications() above.
+     */
+    public AdminReportResponse generateReport() {
+        long totalPatients = patientRepository.count();
+        long totalDoctors = doctorRepository.count();
+        long totalAdmins = adminRepository.count();
+
+        List<Appointment> allAppointments = appointmentRepository.findAll();
+        long totalAppointments = allAppointments.size();
+
+        LocalDate today = LocalDate.now();
+        LocalDate weekStart = today.with(DayOfWeek.MONDAY);
+        LocalDate weekEnd = today.with(DayOfWeek.SUNDAY);
+
+        long appointmentsToday = allAppointments.stream()
+                .filter(a -> today.equals(a.getDate()))
+                .count();
+        long appointmentsThisWeek = allAppointments.stream()
+                .filter(a -> !a.getDate().isBefore(weekStart) && !a.getDate().isAfter(weekEnd))
+                .count();
+
+        Map<String, Long> appointmentsByStatus = new LinkedHashMap<>();
+        for (String status : List.of("CONFIRMED", "CANCELLED", "COMPLETED")) {
+            long count = allAppointments.stream().filter(a -> status.equals(a.getStatus())).count();
+            appointmentsByStatus.put(status, count);
+        }
+
+        // Busiest doctors first, top 5, all-time appointment count (any status).
+        Map<Long, Long> countByDoctorId = new HashMap<>();
+        for (Appointment a : allAppointments) {
+            countByDoctorId.merge(a.getDoctorId(), 1L, Long::sum);
+        }
+        List<AdminReportResponse.DoctorLoad> topDoctors = doctorRepository.findAll().stream()
+                .map(d -> new AdminReportResponse.DoctorLoad(
+                        d.getId(),
+                        DoctorNameFormatter.format(d.getFullName()),
+                        d.getSpecialization(),
+                        countByDoctorId.getOrDefault(d.getId(), 0L)
+                ))
+                .sorted(Comparator.comparingLong(AdminReportResponse.DoctorLoad::getAppointmentCount).reversed())
+                .limit(5)
+                .collect(Collectors.toList());
+
+        List<Notification> allNotifications = notificationRepository.findAllByOrderByCreatedAtDesc();
+        long totalNotifications = allNotifications.size();
+        Map<String, Long> notificationsByStatus = new LinkedHashMap<>();
+        for (String status : List.of("SENT", "LOGGED", "UNDELIVERED")) {
+            long count = allNotifications.stream().filter(n -> status.equals(n.getStatus())).count();
+            notificationsByStatus.put(status, count);
+        }
+
+        return new AdminReportResponse(
+                totalPatients, totalDoctors, totalAdmins,
+                totalAppointments, appointmentsToday, appointmentsThisWeek,
+                appointmentsByStatus, topDoctors,
+                notificationsByStatus, totalNotifications
+        );
+    }
 }
+ 

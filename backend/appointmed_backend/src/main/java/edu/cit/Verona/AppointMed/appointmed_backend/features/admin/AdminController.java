@@ -373,6 +373,17 @@ public class AdminController {
         return ResponseEntity.ok(adminService.listNotifications());
     }
 
+    // ---------- Reports ----------
+
+    /** FR-035: aggregated appointment statistics and system activity for the admin Reports view. */
+    @GetMapping("/reports")
+    public ResponseEntity<?> getReport(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        ResponseEntity<?> authError = requireAdmin(authHeader);
+        if (authError != null) return authError;
+
+        return ResponseEntity.ok(adminService.generateReport());
+    }
+
     /** Returns null if the caller is a valid admin, or an error response to return immediately. */
     private ResponseEntity<?> requireAdmin(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -388,3 +399,4 @@ public class AdminController {
         return null;
     }
 }
+ 
