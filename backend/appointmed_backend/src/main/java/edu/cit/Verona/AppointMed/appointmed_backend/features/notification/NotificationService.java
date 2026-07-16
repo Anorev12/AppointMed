@@ -16,6 +16,8 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * FR-013, FR-020, FR-021, FR-022, FR-023, FR-025, FR-026, FR-027.
@@ -43,6 +45,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final TemplateEngine templateEngine;
+    private final NotificationTemplateService templateService;
 
     @Autowired(required = false)
     private JavaMailSender mailSender;
@@ -55,9 +58,11 @@ public class NotificationService {
 
     private static final int MAX_ATTEMPTS = 3; // FR-026
 
-    public NotificationService(NotificationRepository notificationRepository, TemplateEngine templateEngine) {
+    public NotificationService(NotificationRepository notificationRepository, TemplateEngine templateEngine,
+                                NotificationTemplateService templateService) {
         this.notificationRepository = notificationRepository;
         this.templateEngine = templateEngine;
+        this.templateService = templateService;
     }
 
     /** FR-013 / FR-021: sent to the patient the moment a booking is confirmed — the one HTML-styled email so far. */
@@ -66,7 +71,13 @@ public class NotificationService {
         String date = a.getDate().format(DATE_FMT);
         String time = NotificationTimeFormatter.format(a.getTime());
 
-        String subject = "Appointment confirmed — " + a.getReference();
+        Map<String, String> vars = new HashMap<>();
+        vars.put("patientName", a.getPatientName());
+        vars.put("doctorName", doctorName);
+        vars.put("date", date);
+        vars.put("time", time);
+        vars.put("reference", a.getReference());
+        String subject = templateService.renderSubject("BOOKING_CONFIRMATION", vars); // FR-024
 
         // Plain-text fallback for the notification log and for mail clients that can't render HTML.
         String plainBody = "Hi " + a.getPatientName() + ",\n\n"
@@ -86,6 +97,7 @@ public class NotificationService {
         context.setVariable("date", date);
         context.setVariable("time", time);
         context.setVariable("reference", a.getReference());
+        context.setVariable("customMessage", templateService.getCustomMessage("BOOKING_CONFIRMATION")); // FR-024
         return templateEngine.process("email/booking-confirmation", context);
     }
 
@@ -95,7 +107,13 @@ public class NotificationService {
         String date = a.getDate().format(DATE_FMT);
         String time = NotificationTimeFormatter.format(a.getTime());
 
-        String subject = "New appointment booked — " + a.getReference();
+        Map<String, String> vars = new HashMap<>();
+        vars.put("patientName", a.getPatientName());
+        vars.put("date", date);
+        vars.put("time", time);
+        vars.put("reference", a.getReference());
+        String subject = templateService.renderSubject("NEW_BOOKING", vars); // FR-024
+
         String plainBody = "You have a new appointment with " + a.getPatientName() + " on "
                 + date + " at " + time + ".\n"
                 + "Reference number: " + a.getReference() + "\n\n"
@@ -112,6 +130,7 @@ public class NotificationService {
         context.setVariable("date", date);
         context.setVariable("time", time);
         context.setVariable("reference", a.getReference());
+        context.setVariable("customMessage", templateService.getCustomMessage("NEW_BOOKING")); // FR-024
         return templateEngine.process("email/new-booking-doctor", context);
     }
 
@@ -121,7 +140,14 @@ public class NotificationService {
         String date = a.getDate().format(DATE_FMT);
         String time = NotificationTimeFormatter.format(a.getTime());
 
-        String subject = "Appointment cancelled — " + a.getReference();
+        Map<String, String> vars = new HashMap<>();
+        vars.put("patientName", a.getPatientName());
+        vars.put("doctorName", doctorName);
+        vars.put("date", date);
+        vars.put("time", time);
+        vars.put("reference", a.getReference());
+        vars.put("cancelledBy", cancelledBy);
+        String subject = templateService.renderSubject("CANCELLATION", vars); // FR-024
 
         String plainBody = "Hi " + a.getPatientName() + ",\n\n"
                 + "Your appointment with " + doctorName + " on " + date
@@ -143,6 +169,7 @@ public class NotificationService {
         context.setVariable("time", time);
         context.setVariable("reference", a.getReference());
         context.setVariable("cancelledBy", cancelledBy);
+        context.setVariable("customMessage", templateService.getCustomMessage("CANCELLATION")); // FR-024
         return templateEngine.process("email/appointment-cancelled", context);
     }
 
@@ -152,7 +179,15 @@ public class NotificationService {
         String newDate = a.getDate().format(DATE_FMT);
         String newTime = NotificationTimeFormatter.format(a.getTime());
 
-        String subject = "Appointment rescheduled — " + a.getReference();
+        Map<String, String> vars = new HashMap<>();
+        vars.put("patientName", a.getPatientName());
+        vars.put("doctorName", doctorName);
+        vars.put("oldDate", oldDate);
+        vars.put("oldTime", oldTime);
+        vars.put("newDate", newDate);
+        vars.put("newTime", newTime);
+        vars.put("reference", a.getReference());
+        String subject = templateService.renderSubject("RESCHEDULE", vars); // FR-024
 
         String plainBody = "Hi " + a.getPatientName() + ",\n\n"
                 + "Your appointment with " + doctorName + " has been moved from "
@@ -174,6 +209,7 @@ public class NotificationService {
         context.setVariable("newDate", newDate);
         context.setVariable("newTime", newTime);
         context.setVariable("reference", a.getReference());
+        context.setVariable("customMessage", templateService.getCustomMessage("RESCHEDULE")); // FR-024
         return templateEngine.process("email/appointment-rescheduled", context);
     }
 
@@ -187,7 +223,14 @@ public class NotificationService {
         String date = a.getDate().format(DATE_FMT);
         String time = NotificationTimeFormatter.format(a.getTime());
 
-        String subject = "Action needed: reschedule your appointment — " + a.getReference();
+        Map<String, String> vars = new HashMap<>();
+        vars.put("patientName", a.getPatientName());
+        vars.put("doctorName", doctorName);
+        vars.put("date", date);
+        vars.put("time", time);
+        vars.put("reference", a.getReference());
+        String subject = templateService.renderSubject("SCHEDULE_CHANGE", vars); // FR-024
+
         String plainBody = "Hi " + a.getPatientName() + ",\n\n"
                 + doctorName + " has become unavailable on " + date
                 + ", which is the date of your appointment at " + time + " (Reference: " + a.getReference() + ").\n"
@@ -208,37 +251,52 @@ public class NotificationService {
         context.setVariable("date", date);
         context.setVariable("time", time);
         context.setVariable("reference", a.getReference());
+        context.setVariable("customMessage", templateService.getCustomMessage("SCHEDULE_CHANGE")); // FR-024
         return templateEngine.process("email/schedule-change", context);
     }
 
     /** FR-022: 24-hour or 1-hour reminder, called by ReminderScheduler. Both now have HTML templates — 1h is styled more urgently than 24h. */
-    public void notifyReminder(Appointment a, String patientEmail, String windowLabel) {
+    public void notifyReminder(Appointment a, String patientEmail, String windowLabel, int offsetHours) {
         String doctorName = DoctorNameFormatter.format(a.getDoctorName());
         String date = a.getDate().format(DATE_FMT);
         String time = NotificationTimeFormatter.format(a.getTime());
 
-        String subject = "Reminder: appointment " + windowLabel + " — " + a.getReference();
+        // Only the 1-hour offset gets the "urgent" styled template — any other
+        // admin-configured offset (24h default, or something custom like 48h)
+        // uses the calmer advance-notice design. FR-024 lets the offsets be
+        // arbitrary, but authoring a bespoke branded HTML template per possible
+        // value isn't practical, so offsets are grouped into these two designs.
+        boolean isOneHour = offsetHours == 1;
+        String type = isOneHour ? "REMINDER_1H" : "REMINDER_24H";
+
+        Map<String, String> vars = new HashMap<>();
+        vars.put("patientName", a.getPatientName());
+        vars.put("doctorName", doctorName);
+        vars.put("date", date);
+        vars.put("time", time);
+        vars.put("reference", a.getReference());
+        String subject = templateService.renderSubject(type, vars); // FR-024
+
         String plainBody = "Hi " + a.getPatientName() + ",\n\n"
                 + "This is a reminder that you have an appointment with " + doctorName + " "
                 + windowLabel + ", on " + date + " at " + time + ".\n"
                 + "Reference number: " + a.getReference() + "\n\n"
                 + "— AppointMed";
 
-        boolean isOneHour = "in 1 hour".equals(windowLabel);
-        String type = isOneHour ? "REMINDER_1H" : "REMINDER_24H";
         String templateName = isOneHour ? "email/appointment-reminder-1h" : "email/appointment-reminder-24h";
-        String htmlBody = renderReminderHtml(templateName, a, doctorName, date, time);
+        String htmlBody = renderReminderHtml(templateName, type, a, doctorName, date, time);
 
         send("PATIENT", a.getPatientId(), patientEmail, type, subject, plainBody, htmlBody);
     }
 
-    private String renderReminderHtml(String templateName, Appointment a, String doctorName, String date, String time) {
+    private String renderReminderHtml(String templateName, String type, Appointment a, String doctorName, String date, String time) {
         Context context = new Context();
         context.setVariable("patientName", a.getPatientName());
         context.setVariable("doctorName", doctorName);
         context.setVariable("date", date);
         context.setVariable("time", time);
         context.setVariable("reference", a.getReference());
+        context.setVariable("customMessage", templateService.getCustomMessage(type)); // FR-024
         return templateEngine.process(templateName, context);
     }
 
