@@ -33,6 +33,11 @@ function daysArrayToMap(daysArray) {
  *  - PUT    /api/admin/password                      (change the logged-in admin's own password)
  *  - GET    /api/admin/appointments                 (clinic-wide appointments)
  *  - PUT    /api/admin/appointments/{id}/cancel     (override cancel)
+ *  - GET    /api/admin/settings/templates            (FR-024: list notification templates)
+ *  - PUT    /api/admin/settings/templates/{type}    (FR-024: edit a template's subject/custom message)
+ *  - POST   /api/admin/settings/templates/{type}/reset (FR-024: reset a template to its default)
+ *  - GET    /api/admin/settings/reminders            (FR-024: current reminder offset hours)
+ *  - PUT    /api/admin/settings/reminders            (FR-024: update reminder offset hours)
  *
  * Business rule: there is no delete button, and no backend endpoint, for
  * removing an admin account — admins can only ever change their own password.
@@ -54,6 +59,7 @@ const PATH_TO_VIEW = {
   "/admin/doctors": "doctors",
   "/admin/admins": "admins",
   "/admin/reports": "reports",
+  "/admin/settings": "settings",
   "/admin/password": "password",
 };
 const VIEW_TO_PATH = {
@@ -63,6 +69,7 @@ const VIEW_TO_PATH = {
   doctors: "/admin/doctors",
   admins: "/admin/admins",
   reports: "/admin/reports",
+  settings: "/admin/settings",
   password: "/admin/password",
 };
 
@@ -143,6 +150,23 @@ function setView(next) {
   const [report, setReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(true);
   const [reportError, setReportError] = useState("");
+
+  // ---- Notification settings (FR-024) ----
+  const [templates, setTemplates] = useState([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [templatesError, setTemplatesError] = useState("");
+  const [selectedTemplateType, setSelectedTemplateType] = useState(null);
+  const [templateDraft, setTemplateDraft] = useState({ subjectTemplate: "", customMessage: "" });
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateSaveMessage, setTemplateSaveMessage] = useState("");
+  const [templateSaveError, setTemplateSaveError] = useState("");
+
+  const [reminderOffsets, setReminderOffsets] = useState([]);
+  const [reminderLoading, setReminderLoading] = useState(true);
+  const [reminderError, setReminderError] = useState("");
+  const [newOffsetInput, setNewOffsetInput] = useState("");
+  const [savingReminders, setSavingReminders] = useState(false);
+  const [reminderSaveMessage, setReminderSaveMessage] = useState("");
 
   const loadPatients = useCallback(async () => {
     setPatientsLoading(true);
@@ -225,6 +249,123 @@ function setView(next) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
+
+  const loadTemplates = useCallback(async () => {
+    setTemplatesLoading(true);
+    setTemplatesError("");
+    try {
+      const data = await AdminAPI.listTemplates();
+      setTemplates(data);
+      // Keep whatever's selected in view; otherwise default to the first template in the list.
+      setSelectedTemplateType((prev) => prev || (data[0] && data[0].type) || null);
+    } catch (err) {
+      setTemplatesError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't load notification templates.");
+    } finally {
+      setTemplatesLoading(false);
+    }
+  }, []);
+
+  const loadReminderSettings = useCallback(async () => {
+    setReminderLoading(true);
+    setReminderError("");
+    try {
+      const data = await AdminAPI.getReminderSettings();
+      setReminderOffsets(data.offsetHours || []);
+    } catch (err) {
+      setReminderError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't load the reminder schedule.");
+    } finally {
+      setReminderLoading(false);
+    }
+  }, []);
+
+  // Settings data isn't needed until the admin actually visits the tab.
+  useEffect(() => {
+    if (view === "settings") {
+      loadTemplates();
+      loadReminderSettings();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
+
+  // Load the draft form whenever the selected template (or the underlying list) changes.
+  useEffect(() => {
+    const t = templates.find((tpl) => tpl.type === selectedTemplateType);
+    if (t) {
+      setTemplateDraft({ subjectTemplate: t.subjectTemplate, customMessage: t.customMessage || "" });
+      setTemplateSaveMessage("");
+      setTemplateSaveError("");
+    }
+  }, [selectedTemplateType, templates]);
+
+  async function saveTemplate() {
+    if (!selectedTemplateType) return;
+    setSavingTemplate(true);
+    setTemplateSaveError("");
+    setTemplateSaveMessage("");
+    try {
+      const updated = await AdminAPI.updateTemplate(
+        selectedTemplateType,
+        templateDraft.subjectTemplate,
+        templateDraft.customMessage
+      );
+      setTemplates((prev) => prev.map((t) => (t.type === updated.type ? updated : t)));
+      setTemplateSaveMessage("Saved.");
+    } catch (err) {
+      setTemplateSaveError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't save the template.");
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
+
+  async function resetTemplate() {
+    if (!selectedTemplateType) return;
+    setSavingTemplate(true);
+    setTemplateSaveError("");
+    setTemplateSaveMessage("");
+    try {
+      const updated = await AdminAPI.resetTemplate(selectedTemplateType);
+      setTemplates((prev) => prev.map((t) => (t.type === updated.type ? updated : t)));
+      setTemplateSaveMessage("Reset to default.");
+    } catch (err) {
+      setTemplateSaveError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't reset the template.");
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
+
+  function addReminderOffset() {
+    const hours = parseInt(newOffsetInput, 10);
+    if (!Number.isFinite(hours) || hours < 1 || hours > 168) {
+      setReminderError("Enter a number of hours between 1 and 168.");
+      return;
+    }
+    if (reminderOffsets.includes(hours)) {
+      setNewOffsetInput("");
+      return;
+    }
+    setReminderError("");
+    setReminderOffsets((prev) => [...prev, hours].sort((a, b) => b - a));
+    setNewOffsetInput("");
+  }
+
+  function removeReminderOffset(hours) {
+    setReminderOffsets((prev) => prev.filter((h) => h !== hours));
+  }
+
+  async function saveReminderSettings() {
+    setSavingReminders(true);
+    setReminderError("");
+    setReminderSaveMessage("");
+    try {
+      const updated = await AdminAPI.updateReminderSettings(reminderOffsets);
+      setReminderOffsets(updated.offsetHours || []);
+      setReminderSaveMessage("Saved.");
+    } catch (err) {
+      setReminderError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't save the reminder schedule.");
+    } finally {
+      setSavingReminders(false);
+    }
+  }
 
   const todayCount = appointments.filter((a) => a.date === todayStr() && a.status !== "CANCELLED").length;
   const completedCount = appointments.filter((a) => a.status === "COMPLETED").length;
@@ -540,6 +681,12 @@ function setView(next) {
             Reports
           </button>
           <button
+            className={`db-nav-item${view === "settings" ? " is-active" : ""}`}
+            onClick={() => setView("settings")}
+          >
+            Settings
+          </button>
+          <button
             className={`db-nav-item${view === "password" ? " is-active" : ""}`}
             onClick={() => setView("password")}
           >
@@ -572,6 +719,7 @@ function setView(next) {
               {view === "doctors" && "Doctors"}
               {view === "admins" && "Admins"}
               {view === "reports" && "Reports"}
+              {view === "settings" && "Notification settings"}
               {view === "password" && "Change password"}
             </div>
             <div className="db-topbar-sub">
@@ -581,6 +729,7 @@ function setView(next) {
               {view === "doctors" && "Manage doctor profiles and availability."}
               {view === "admins" && "Administrator accounts. Admins can't be deleted here — only created."}
               {view === "reports" && "Appointment statistics and system activity (FR-035)."}
+              {view === "settings" && "Configure notification templates and the reminder schedule (FR-024)."}
               {view === "password" && "Update the password for your own account."}
             </div>
           </div>
@@ -1239,6 +1388,154 @@ function setView(next) {
           )}
 
           {/* ---------- CHANGE PASSWORD ---------- */}
+          {view === "settings" && (
+            <>
+              {/* ---- Notification templates ---- */}
+              <div className="db-panel" style={{ marginBottom: 24 }}>
+                <div className="db-panel-head">
+                  <div className="db-panel-title">Notification templates</div>
+                </div>
+                {templatesError && (
+                  <div style={{ color: "var(--alert)", fontSize: 13, padding: "0 20px 12px" }}>{templatesError}</div>
+                )}
+                <div className="db-panel-body" style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                  {templatesLoading ? (
+                    <div className="db-empty">Loading templates…</div>
+                  ) : (
+                    <>
+                      <div style={{ minWidth: 220 }}>
+                        {templates.map((t) => (
+                          <button
+                            key={t.type}
+                            type="button"
+                            className={`db-nav-item${selectedTemplateType === t.type ? " is-active" : ""}`}
+                            style={{ width: "100%", textAlign: "left", marginBottom: 4 }}
+                            onClick={() => setSelectedTemplateType(t.type)}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {selectedTemplateType && (
+                        <div style={{ flex: 1, minWidth: 320 }}>
+                          <div className="db-field">
+                            <label className="db-label">Subject line</label>
+                            <input
+                              className="db-input"
+                              value={templateDraft.subjectTemplate}
+                              onChange={(e) =>
+                                setTemplateDraft({ ...templateDraft, subjectTemplate: e.target.value })
+                              }
+                            />
+                          </div>
+                          <div className="db-field">
+                            <label className="db-label">Custom message (optional)</label>
+                            <textarea
+                              className="db-textarea"
+                              rows={4}
+                              placeholder="Shown as a highlighted note inside the email — e.g. clinic hours, a holiday notice. Leave blank to omit it."
+                              value={templateDraft.customMessage}
+                              onChange={(e) =>
+                                setTemplateDraft({ ...templateDraft, customMessage: e.target.value })
+                              }
+                              style={{ resize: "vertical", fontFamily: "inherit" }}
+                            />
+                          </div>
+
+                          <div style={{ fontSize: 12.5, color: "var(--text-muted, #5B6B7C)", marginBottom: 14 }}>
+                            Available placeholders for the subject line:{" "}
+                            {templates.find((t) => t.type === selectedTemplateType)?.availablePlaceholders}
+                          </div>
+
+                          {templateSaveError && (
+                            <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>{templateSaveError}</div>
+                          )}
+                          {templateSaveMessage && (
+                            <div style={{ color: "var(--green)", fontSize: 13, marginBottom: 12 }}>{templateSaveMessage}</div>
+                          )}
+
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button className="db-btn primary" disabled={savingTemplate} onClick={saveTemplate}>
+                              {savingTemplate ? "Saving…" : "Save template"}
+                            </button>
+                            <button className="db-btn outline" disabled={savingTemplate} onClick={resetTemplate}>
+                              Reset to default
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* ---- Reminder schedule ---- */}
+              <div className="db-panel" style={{ maxWidth: 480 }}>
+                <div className="db-panel-head">
+                  <div className="db-panel-title">Reminder schedule</div>
+                </div>
+                <div className="db-panel-body">
+                  {reminderLoading ? (
+                    <div className="db-empty">Loading…</div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 13, color: "var(--text-muted, #5B6B7C)", marginBottom: 14 }}>
+                        Patients get a reminder email this many hours before their appointment. Add or remove
+                        offsets below — at least one is required.
+                      </div>
+
+                      {reminderOffsets.length === 0 ? (
+                        <div className="db-empty">No reminder offsets configured.</div>
+                      ) : (
+                        <div style={{ marginBottom: 16 }}>
+                          {reminderOffsets.map((hours) => (
+                            <div
+                              key={hours}
+                              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0" }}
+                            >
+                              <span style={{ fontSize: 14 }}>{hours} hour{hours === 1 ? "" : "s"} before</span>
+                              <button className="db-btn outline sm" onClick={() => removeReminderOffset(hours)}>
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                        <input
+                          className="db-input"
+                          type="number"
+                          min={1}
+                          max={168}
+                          placeholder="Hours before (e.g. 48)"
+                          value={newOffsetInput}
+                          onChange={(e) => setNewOffsetInput(e.target.value)}
+                          style={{ flex: 1 }}
+                        />
+                        <button className="db-btn outline sm" type="button" onClick={addReminderOffset}>
+                          Add
+                        </button>
+                      </div>
+
+                      {reminderError && (
+                        <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>{reminderError}</div>
+                      )}
+                      {reminderSaveMessage && (
+                        <div style={{ color: "var(--green)", fontSize: 13, marginBottom: 12 }}>{reminderSaveMessage}</div>
+                      )}
+
+                      <button className="db-btn primary" disabled={savingReminders} onClick={saveReminderSettings}>
+                        {savingReminders ? "Saving…" : "Save schedule"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
           {view === "password" && (
             <div className="db-panel" style={{ maxWidth: 480 }}>
               <div className="db-panel-head">

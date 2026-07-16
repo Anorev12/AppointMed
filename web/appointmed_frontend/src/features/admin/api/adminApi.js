@@ -103,4 +103,26 @@ export const AdminAPI = {
 
   // ---- Reports (FR-035) ----
   getReport: () => apiFetch("/admin/reports"),
+
+  // ---- Notification settings (FR-024) ----
+  listTemplates: () => apiFetch("/admin/settings/templates"),
+
+  updateTemplate: (type, subjectTemplate, customMessage) =>
+    apiFetch(`/admin/settings/templates/${type}`, {
+      method: "PUT",
+      body: JSON.stringify({ subjectTemplate, customMessage }),
+    }),
+
+  resetTemplate: (type) =>
+    apiFetch(`/admin/settings/templates/${type}/reset`, {
+      method: "POST",
+    }),
+
+  getReminderSettings: () => apiFetch("/admin/settings/reminders"),
+
+  updateReminderSettings: (offsetHours) =>
+    apiFetch("/admin/settings/reminders", {
+      method: "PUT",
+      body: JSON.stringify({ offsetHours }),
+    }),
 };
