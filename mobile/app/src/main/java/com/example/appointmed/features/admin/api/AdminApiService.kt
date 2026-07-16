@@ -2,6 +2,7 @@ package com.example.appointmed.features.admin.api
 import com.example.appointmed.features.admin.models.AdminAppointmentApiResponse
 import com.example.appointmed.features.admin.models.AdminCreateRequest
 import com.example.appointmed.features.admin.models.AdminPatientApiResponse
+import com.example.appointmed.features.admin.models.AdminReportResponse
 import com.example.appointmed.features.admin.models.AdminSimpleResponse
 import com.example.appointmed.features.admin.models.AvailabilityResponse
 import com.example.appointmed.features.admin.models.DoctorCreateRequest
@@ -89,4 +90,9 @@ interface AdminApiService {
         @Path("id") doctorId: Long,
         @Path("date") date: String
     ): Response<UnavailableDatesResponse>
+
+    // ---- Reports (FR-035) ----
+
+    @GET("api/admin/reports")
+    suspend fun getReport(): Response<AdminReportResponse>
 }
