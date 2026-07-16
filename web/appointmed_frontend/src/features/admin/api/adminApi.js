@@ -100,4 +100,7 @@ export const AdminAPI = {
     apiFetch(`/admin/doctors/${doctorId}/availability/unavailable-dates/${date}`, {
       method: "DELETE",
     }),
+
+  // ---- Reports (FR-035) ----
+  getReport: () => apiFetch("/admin/reports"),
 };

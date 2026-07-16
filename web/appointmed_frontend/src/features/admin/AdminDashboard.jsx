@@ -53,6 +53,7 @@ const PATH_TO_VIEW = {
   "/admin/patients": "patients",
   "/admin/doctors": "doctors",
   "/admin/admins": "admins",
+  "/admin/reports": "reports",
   "/admin/password": "password",
 };
 const VIEW_TO_PATH = {
@@ -61,6 +62,7 @@ const VIEW_TO_PATH = {
   patients: "/admin/patients",
   doctors: "/admin/doctors",
   admins: "/admin/admins",
+  reports: "/admin/reports",
   password: "/admin/password",
 };
 
@@ -137,6 +139,11 @@ function setView(next) {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
 
+  // ---- Reports (FR-035) ----
+  const [report, setReport] = useState(null);
+  const [reportLoading, setReportLoading] = useState(true);
+  const [reportError, setReportError] = useState("");
+
   const loadPatients = useCallback(async () => {
     setPatientsLoading(true);
     setPatientsError("");
@@ -190,12 +197,34 @@ function setView(next) {
     }
   }, []);
 
+  const loadReport = useCallback(async () => {
+    setReportLoading(true);
+    setReportError("");
+    try {
+      const data = await AdminAPI.getReport();
+      setReport(data);
+    } catch (err) {
+      setReportError(err.status === undefined ? "Can't reach the server." : err.message || "Couldn't load the report.");
+    } finally {
+      setReportLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadPatients();
     loadDoctors();
     loadAdmins();
     loadAppointments();
-  }, [loadPatients, loadDoctors, loadAdmins, loadAppointments]);
+    loadReport();
+  }, [loadPatients, loadDoctors, loadAdmins, loadAppointments, loadReport]);
+
+  // Stats can go stale while the admin works on other tabs, so refresh on every visit to Reports.
+  useEffect(() => {
+    if (view === "reports") {
+      loadReport();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
 
   const todayCount = appointments.filter((a) => a.date === todayStr() && a.status !== "CANCELLED").length;
   const completedCount = appointments.filter((a) => a.status === "COMPLETED").length;
@@ -505,6 +534,12 @@ function setView(next) {
             Admins
           </button>
           <button
+            className={`db-nav-item${view === "reports" ? " is-active" : ""}`}
+            onClick={() => setView("reports")}
+          >
+            Reports
+          </button>
+          <button
             className={`db-nav-item${view === "password" ? " is-active" : ""}`}
             onClick={() => setView("password")}
           >
@@ -536,6 +571,7 @@ function setView(next) {
               {view === "patients" && "Patients"}
               {view === "doctors" && "Doctors"}
               {view === "admins" && "Admins"}
+              {view === "reports" && "Reports"}
               {view === "password" && "Change password"}
             </div>
             <div className="db-topbar-sub">
@@ -544,6 +580,7 @@ function setView(next) {
               {view === "patients" && "Registered patient accounts."}
               {view === "doctors" && "Manage doctor profiles and availability."}
               {view === "admins" && "Administrator accounts. Admins can't be deleted here — only created."}
+              {view === "reports" && "Appointment statistics and system activity (FR-035)."}
               {view === "password" && "Update the password for your own account."}
             </div>
           </div>
@@ -1072,6 +1109,132 @@ function setView(next) {
                   )}
                 </div>
               </div>
+            </>
+          )}
+
+          {/* ---------- REPORTS (FR-035) ---------- */}
+          {view === "reports" && (
+            <>
+              {reportLoading ? (
+                <div className="db-panel">
+                  <div className="db-panel-body">
+                    <div className="db-empty">Loading report…</div>
+                  </div>
+                </div>
+              ) : reportError ? (
+                <div className="db-panel">
+                  <div className="db-panel-body">
+                    <div className="db-empty">{reportError}</div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="db-stats-grid">
+                    <div className="db-stat-card">
+                      <div className="db-stat-value">{report.totalPatients}</div>
+                      <div className="db-stat-label">Total patients</div>
+                    </div>
+                    <div className="db-stat-card">
+                      <div className="db-stat-value">{report.totalDoctors}</div>
+                      <div className="db-stat-label">Total doctors</div>
+                    </div>
+                    <div className="db-stat-card">
+                      <div className="db-stat-value">{report.totalAppointments}</div>
+                      <div className="db-stat-label">Total appointments</div>
+                    </div>
+                    <div className="db-stat-card">
+                      <div className="db-stat-value">{report.appointmentsToday}</div>
+                      <div className="db-stat-label">Appointments today</div>
+                    </div>
+                    <div className="db-stat-card">
+                      <div className="db-stat-value">{report.appointmentsThisWeek}</div>
+                      <div className="db-stat-label">Appointments this week</div>
+                    </div>
+                    <div className="db-stat-card">
+                      <div className="db-stat-value">{report.totalNotifications}</div>
+                      <div className="db-stat-label">Notifications logged</div>
+                    </div>
+                  </div>
+
+                  <div className="db-panel">
+                    <div className="db-panel-head">
+                      <div className="db-panel-title">Appointments by status</div>
+                    </div>
+                    <div className="db-panel-body no-pad">
+                      <table className="db-table">
+                        <thead>
+                          <tr>
+                            <th>Status</th>
+                            <th>Count</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(report.appointmentsByStatus || {}).map(([status, count]) => (
+                            <tr key={status}>
+                              <td>{status}</td>
+                              <td>{count}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="db-panel">
+                    <div className="db-panel-head">
+                      <div className="db-panel-title">Busiest doctors</div>
+                    </div>
+                    <div className="db-panel-body no-pad">
+                      {(report.topDoctorsByAppointments || []).length === 0 ? (
+                        <div className="db-empty">No appointment data yet.</div>
+                      ) : (
+                        <table className="db-table">
+                          <thead>
+                            <tr>
+                              <th>Doctor</th>
+                              <th>Specialization</th>
+                              <th>Appointments</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {report.topDoctorsByAppointments.map((d) => (
+                              <tr key={d.doctorId}>
+                                <td>{d.doctorName}</td>
+                                <td>{d.specialization || "—"}</td>
+                                <td>{d.appointmentCount}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="db-panel">
+                    <div className="db-panel-head">
+                      <div className="db-panel-title">Notification delivery</div>
+                    </div>
+                    <div className="db-panel-body no-pad">
+                      <table className="db-table">
+                        <thead>
+                          <tr>
+                            <th>Status</th>
+                            <th>Count</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(report.notificationsByStatus || {}).map(([status, count]) => (
+                            <tr key={status}>
+                              <td>{status}</td>
+                              <td>{count}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
             </>
           )}
 
