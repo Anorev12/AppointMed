@@ -97,7 +97,7 @@ public class AppointmentService {
         appointment.setDate(date);
         appointment.setTime(time);
         appointment.setStatus("CONFIRMED");
-        appointment.setReference("PENDING"); // placeholder until we have an id
+        appointment.setReference("PENDING-" + java.util.UUID.randomUUID()); // unique placeholder until we have an id — must never collide across concurrent bookings
 
         appointment = appointmentRepository.save(appointment);
         appointment.setReference(String.format("APT-%06d", appointment.getId()));

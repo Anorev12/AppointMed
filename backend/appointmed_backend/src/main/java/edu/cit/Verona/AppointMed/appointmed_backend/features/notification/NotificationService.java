@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -65,7 +66,11 @@ public class NotificationService {
         this.templateService = templateService;
     }
 
-    /** FR-013 / FR-021: sent to the patient the moment a booking is confirmed — the one HTML-styled email so far. */
+    /**
+     * FR-013 / FR-021: sent to the patient the moment a booking is confirmed — the one HTML-styled email so far.
+     * Runs on the notificationExecutor pool (see AsyncConfig) so booking a slot doesn't block on SMTP.
+     */
+    @Async("notificationExecutor")
     public void notifyBookingConfirmation(Appointment a, String patientEmail) {
         String doctorName = DoctorNameFormatter.format(a.getDoctorName());
         String date = a.getDate().format(DATE_FMT);
@@ -102,7 +107,7 @@ public class NotificationService {
     }
 
     /** FR-027: sent to the doctor when a patient books with them. */
-    /** FR-027: sent to the doctor when a patient books with them. */
+    @Async("notificationExecutor")
     public void notifyNewBookingToDoctor(Appointment a, String doctorEmail) {
         String date = a.getDate().format(DATE_FMT);
         String time = NotificationTimeFormatter.format(a.getTime());
@@ -135,6 +140,7 @@ public class NotificationService {
     }
 
     /** FR-023: sent to the patient when their appointment is cancelled, by whoever cancelled it. */
+    @Async("notificationExecutor")
     public void notifyCancellation(Appointment a, String patientEmail, String cancelledBy) {
         String doctorName = DoctorNameFormatter.format(a.getDoctorName());
         String date = a.getDate().format(DATE_FMT);
@@ -174,6 +180,7 @@ public class NotificationService {
     }
 
     /** FR-023: sent to the patient when their appointment is moved to a new date/time. */
+    @Async("notificationExecutor")
     public void notifyReschedule(Appointment a, String patientEmail, String oldDate, String oldTime) {
         String doctorName = DoctorNameFormatter.format(a.getDoctorName());
         String newDate = a.getDate().format(DATE_FMT);
@@ -218,6 +225,7 @@ public class NotificationService {
      * a doctor just marked unavailable. Informational only — this does not
      * auto-cancel the appointment; the clinic still needs to follow up.
      */
+    @Async("notificationExecutor")
     public void notifyScheduleChange(Appointment a, String patientEmail) {
         String doctorName = DoctorNameFormatter.format(a.getDoctorName());
         String date = a.getDate().format(DATE_FMT);
@@ -256,6 +264,7 @@ public class NotificationService {
     }
 
     /** FR-022: 24-hour or 1-hour reminder, called by ReminderScheduler. Both now have HTML templates — 1h is styled more urgently than 24h. */
+    @Async("notificationExecutor")
     public void notifyReminder(Appointment a, String patientEmail, String windowLabel, int offsetHours) {
         String doctorName = DoctorNameFormatter.format(a.getDoctorName());
         String date = a.getDate().format(DATE_FMT);
