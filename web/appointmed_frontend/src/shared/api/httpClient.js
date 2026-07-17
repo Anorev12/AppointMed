@@ -1,4 +1,4 @@
-const API_ROOT = "http://localhost:8080/api";
+const API_ROOT = "https://appointmed-vwfg.onrender.com/api";
 
 function authHeaders() {
   const token = localStorage.getItem("am_token");
