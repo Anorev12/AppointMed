@@ -115,6 +115,7 @@ function setView(next) {
   const [apptsLoading, setApptsLoading] = useState(true);
   const [apptsError, setApptsError] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
+  const [apptFilter, setApptFilter] = useState("all"); // all | confirmed | cancelled | today | upcoming
 
   // ---- Add doctor form ----
   const [showAddDoctor, setShowAddDoctor] = useState(false);
@@ -379,12 +380,24 @@ function setView(next) {
   const filteredAdmins = admins.filter((a) =>
     a.fullName.toLowerCase().includes(search.toLowerCase()) || a.email.toLowerCase().includes(search.toLowerCase())
   );
-  const filteredAppointments = appointments.filter(
-    (a) =>
-      a.patientName.toLowerCase().includes(search.toLowerCase()) ||
-      a.doctorName.toLowerCase().includes(search.toLowerCase()) ||
-      a.reference.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredAppointments = appointments
+    .filter(
+      (a) =>
+        a.patientName.toLowerCase().includes(search.toLowerCase()) ||
+        a.doctorName.toLowerCase().includes(search.toLowerCase()) ||
+        a.reference.toLowerCase().includes(search.toLowerCase())
+    )
+    .filter((a) => {
+      if (apptFilter === "confirmed") return a.status === "CONFIRMED";
+      if (apptFilter === "cancelled") return a.status === "CANCELLED";
+      if (apptFilter === "today") return a.date === todayStr();
+      if (apptFilter === "upcoming") return a.date >= todayStr() && a.status === "CONFIRMED";
+      return true;
+    })
+    .sort((a, b) => {
+      if (apptFilter !== "upcoming") return 0;
+      return a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date);
+    });
 
   async function toggleDoctorStatus(doctor) {
     const nextStatus = doctor.status === "ACTIVE" ? "ON_LEAVE" : "ACTIVE";
@@ -819,6 +832,41 @@ function setView(next) {
           {/* ---------- APPOINTMENTS ---------- */}
           {view === "appointments" && (
             <div className="db-panel">
+              <div className="db-panel-head">
+                <div className="db-panel-title">All appointments</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <button
+                    className={`db-btn sm ${apptFilter === "all" ? "primary" : "outline"}`}
+                    onClick={() => setApptFilter("all")}
+                  >
+                    All
+                  </button>
+                  <button
+                    className={`db-btn sm ${apptFilter === "confirmed" ? "primary" : "outline"}`}
+                    onClick={() => setApptFilter("confirmed")}
+                  >
+                    Confirmed
+                  </button>
+                  <button
+                    className={`db-btn sm ${apptFilter === "cancelled" ? "primary" : "outline"}`}
+                    onClick={() => setApptFilter("cancelled")}
+                  >
+                    Cancelled
+                  </button>
+                  <button
+                    className={`db-btn sm ${apptFilter === "today" ? "primary" : "outline"}`}
+                    onClick={() => setApptFilter("today")}
+                  >
+                    Today
+                  </button>
+                  <button
+                    className={`db-btn sm ${apptFilter === "upcoming" ? "primary" : "outline"}`}
+                    onClick={() => setApptFilter("upcoming")}
+                  >
+                    Upcoming
+                  </button>
+                </div>
+              </div>
               {apptsError && (
                 <div style={{ color: "var(--alert)", fontSize: 13, padding: "12px 20px 0" }}>{apptsError}</div>
               )}
