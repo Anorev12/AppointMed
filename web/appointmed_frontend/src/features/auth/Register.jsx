@@ -109,7 +109,6 @@ export default function Register({ onRegister, onNavigateToLogin }) {
     try {
       const data = await AuthAPI.register(payload);
       setSubmitting(false);
-      alert(`Registration successful! Welcome, ${data.fullName || values.fullName}.`);
       onRegister && onRegister(data);
     } catch (err) {
       setSubmitting(false);
