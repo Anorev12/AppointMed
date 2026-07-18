@@ -503,16 +503,24 @@ function setView(next) {
                     <div className="db-empty">No doctors available yet.</div>
                   ) : (
                     <div className="db-doctor-grid">
-                      {doctors.map((doc) => (
-                        <div
-                          key={doc.id}
-                          className={`db-doctor-card${selectedDoctor === doc.id ? " is-selected" : ""}`}
-                          onClick={() => pickDoctor(doc.id)}
-                        >
-                          <div className="db-doctor-name">{doc.fullName}</div>
-                          <div className="db-doctor-spec">{doc.specialization}</div>
-                        </div>
-                      ))}
+                      {doctors.map((doc) => {
+                        const onLeave = doc.status === "ON_LEAVE";
+                        return (
+                          <div
+                            key={doc.id}
+                            className={`db-doctor-card${selectedDoctor === doc.id ? " is-selected" : ""}${onLeave ? " is-on-leave" : ""}`}
+                            onClick={() => !onLeave && pickDoctor(doc.id)}
+                            aria-disabled={onLeave}
+                            title={onLeave ? "This doctor is currently on leave" : undefined}
+                          >
+                            <div className="db-doctor-name">
+                              {doc.fullName}
+                              {onLeave && <span className="db-badge on-leave">On leave</span>}
+                            </div>
+                            <div className="db-doctor-spec">{doc.specialization}</div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
