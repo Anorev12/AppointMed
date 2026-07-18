@@ -24,6 +24,19 @@ public class DoctorProfileController {
         this.jwtUtil = jwtUtil;
     }
 
+    /** Doctor's own full account details — id, name, email, specialization, status. */
+    @GetMapping
+    public ResponseEntity<?> getProfile(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            Long doctorId = requireDoctor(authHeader);
+            return ResponseEntity.ok(doctorService.getProfile(doctorId));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(401).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     /** Doctor changes their own password — requires the current password and a confirmed new one. */
     @PutMapping("/password")
     public ResponseEntity<?> changePassword(
@@ -59,3 +72,4 @@ public class DoctorProfileController {
         return jwtUtil.extractId(token);
     }
 }
+ 

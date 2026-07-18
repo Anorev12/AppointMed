@@ -78,6 +78,20 @@ public class DoctorService {
         return doctorRepository.existsById(id);
     }
 
+    /** Used by GET /api/doctor/profile so a doctor can see their own full account details, including specialization. */
+    public edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.dto.DoctorResponse getProfile(Long id) {
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Doctor not found."));
+
+        return new edu.cit.Verona.AppointMed.appointmed_backend.features.doctor.dto.DoctorResponse(
+                doctor.getId(),
+                DoctorNameFormatter.format(doctor.getFullName()),
+                doctor.getEmail(),
+                doctor.getSpecialization(),
+                doctor.getStatus()
+        );
+    }
+
     /**
      * Doctor-initiated password change — requires the current password to
      * be supplied and correct, and the new password to be confirmed, before
