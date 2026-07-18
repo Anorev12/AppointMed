@@ -874,88 +874,6 @@ function setView(next) {
           {/* ---------- PATIENTS ---------- */}
           {view === "patients" && (
             <>
-              {showAddPatient && (
-                <div className="db-panel" style={{ maxWidth: 480 }}>
-                  <div className="db-panel-head">
-                    <div className="db-panel-title">Add patient account</div>
-                  </div>
-                  <div className="db-panel-body">
-                    <form onSubmit={createPatient}>
-                      <div className="db-field">
-                        <label className="db-label">Full name</label>
-                        <input
-                          className="db-input"
-                          value={newPatient.fullName}
-                          onChange={(e) => setNewPatient({ ...newPatient, fullName: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="db-field">
-                        <label className="db-label">Email</label>
-                        <input
-                          className="db-input"
-                          type="email"
-                          value={newPatient.email}
-                          onChange={(e) => setNewPatient({ ...newPatient, email: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="db-field">
-                        <label className="db-label">Temporary password</label>
-                        <input
-                          className="db-input"
-                          type="password"
-                          value={newPatient.password}
-                          onChange={(e) => setNewPatient({ ...newPatient, password: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="db-field">
-                        <label className="db-label">Contact number</label>
-                        <input
-                          className="db-input"
-                          value={newPatient.contactNumber}
-                          onChange={(e) => setNewPatient({ ...newPatient, contactNumber: e.target.value })}
-                        />
-                      </div>
-                      <div className="db-field">
-                        <label className="db-label">Date of birth (optional)</label>
-                        <input
-                          type="date"
-                          className="db-input"
-                          style={{ maxWidth: 220 }}
-                          value={newPatient.dateOfBirth}
-                          max={todayStr()}
-                          onChange={(e) => setNewPatient({ ...newPatient, dateOfBirth: e.target.value })}
-                        />
-                      </div>
-
-                      {addPatientError && (
-                        <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>
-                          {addPatientError}
-                        </div>
-                      )}
-
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button className="db-btn primary" type="submit" disabled={addingPatient}>
-                          {addingPatient ? "Creating…" : "Create patient account"}
-                        </button>
-                        <button
-                          type="button"
-                          className="db-btn outline"
-                          onClick={() => {
-                            setShowAddPatient(false);
-                            setAddPatientError("");
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              )}
-
               <div className="db-panel">
                 <div className="db-panel-head">
                   <div className="db-panel-title">All patients</div>
@@ -1012,79 +930,6 @@ function setView(next) {
           {/* ---------- DOCTORS ---------- */}
           {view === "doctors" && (
             <>
-              {showAddDoctor && (
-                <div className="db-panel" style={{ maxWidth: 480 }}>
-                  <div className="db-panel-head">
-                    <div className="db-panel-title">Add doctor account</div>
-                  </div>
-                  <div className="db-panel-body">
-                    <form onSubmit={createDoctor}>
-                      <div className="db-field">
-                        <label className="db-label">Full name</label>
-                        <input
-                          className="db-input"
-                          value={newDoctor.fullName}
-                          onChange={(e) => setNewDoctor({ ...newDoctor, fullName: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="db-field">
-                        <label className="db-label">Email (must end in @appointmeddoctor.com)</label>
-                        <input
-                          className="db-input"
-                          type="email"
-                          placeholder="dr.name@appointmeddoctor.com"
-                          value={newDoctor.email}
-                          onChange={(e) => setNewDoctor({ ...newDoctor, email: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="db-field">
-                        <label className="db-label">Temporary password</label>
-                        <input
-                          className="db-input"
-                          type="password"
-                          value={newDoctor.password}
-                          onChange={(e) => setNewDoctor({ ...newDoctor, password: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="db-field">
-                        <label className="db-label">Specialization</label>
-                        <input
-                          className="db-input"
-                          value={newDoctor.specialization}
-                          onChange={(e) => setNewDoctor({ ...newDoctor, specialization: e.target.value })}
-                          required
-                        />
-                      </div>
-
-                      {addDoctorError && (
-                        <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>
-                          {addDoctorError}
-                        </div>
-                      )}
-
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button className="db-btn primary" type="submit" disabled={addingDoctor}>
-                          {addingDoctor ? "Creating…" : "Create doctor account"}
-                        </button>
-                        <button
-                          type="button"
-                          className="db-btn outline"
-                          onClick={() => {
-                            setShowAddDoctor(false);
-                            setAddDoctorError("");
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              )}
-
               <div className="db-panel">
                 <div className="db-panel-head">
                   <div className="db-panel-title">All doctors</div>
@@ -1159,70 +1004,6 @@ function setView(next) {
           {/* ---------- ADMINS ---------- */}
           {view === "admins" && (
             <>
-              {showAddAdmin && (
-                <div className="db-panel" style={{ maxWidth: 480 }}>
-                  <div className="db-panel-head">
-                    <div className="db-panel-title">Add admin account</div>
-                  </div>
-                  <div className="db-panel-body">
-                    <form onSubmit={createAdmin}>
-                      <div className="db-field">
-                        <label className="db-label">Full name</label>
-                        <input
-                          className="db-input"
-                          value={newAdmin.fullName}
-                          onChange={(e) => setNewAdmin({ ...newAdmin, fullName: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="db-field">
-                        <label className="db-label">Email (must end in @appointmedadmin.com)</label>
-                        <input
-                          className="db-input"
-                          type="email"
-                          placeholder="name@appointmedadmin.com"
-                          value={newAdmin.email}
-                          onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="db-field">
-                        <label className="db-label">Temporary password</label>
-                        <input
-                          className="db-input"
-                          type="password"
-                          value={newAdmin.password}
-                          onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
-                          required
-                        />
-                      </div>
-
-                      {addAdminError && (
-                        <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>
-                          {addAdminError}
-                        </div>
-                      )}
-
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button className="db-btn primary" type="submit" disabled={addingAdmin}>
-                          {addingAdmin ? "Creating…" : "Create admin account"}
-                        </button>
-                        <button
-                          type="button"
-                          className="db-btn outline"
-                          onClick={() => {
-                            setShowAddAdmin(false);
-                            setAddAdminError("");
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              )}
-
               <div className="db-panel">
                 <div className="db-panel-head">
                   <div className="db-panel-title">All admins</div>
@@ -1590,6 +1371,237 @@ function setView(next) {
           )}
         </div>
       </div>
+
+      {/* ---------- Add patient modal ---------- */}
+      {showAddPatient && (
+        <div
+          className="db-modal-overlay"
+          onClick={() => {
+            setShowAddPatient(false);
+            setAddPatientError("");
+          }}
+        >
+          <div className="db-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="db-modal-title">Add patient account</div>
+            <div className="db-modal-sub">Create login credentials for a new patient.</div>
+            <form onSubmit={createPatient}>
+              <div className="db-field">
+                <label className="db-label">Full name</label>
+                <input
+                  className="db-input"
+                  value={newPatient.fullName}
+                  onChange={(e) => setNewPatient({ ...newPatient, fullName: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="db-field">
+                <label className="db-label">Email</label>
+                <input
+                  className="db-input"
+                  type="email"
+                  value={newPatient.email}
+                  onChange={(e) => setNewPatient({ ...newPatient, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="db-field">
+                <label className="db-label">Temporary password</label>
+                <input
+                  className="db-input"
+                  type="password"
+                  value={newPatient.password}
+                  onChange={(e) => setNewPatient({ ...newPatient, password: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="db-field">
+                <label className="db-label">Contact number</label>
+                <input
+                  className="db-input"
+                  value={newPatient.contactNumber}
+                  onChange={(e) => setNewPatient({ ...newPatient, contactNumber: e.target.value })}
+                />
+              </div>
+              <div className="db-field">
+                <label className="db-label">Date of birth (optional)</label>
+                <input
+                  type="date"
+                  className="db-input"
+                  style={{ maxWidth: 220 }}
+                  value={newPatient.dateOfBirth}
+                  max={todayStr()}
+                  onChange={(e) => setNewPatient({ ...newPatient, dateOfBirth: e.target.value })}
+                />
+              </div>
+
+              {addPatientError && (
+                <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>{addPatientError}</div>
+              )}
+
+              <div className="db-modal-actions">
+                <button
+                  type="button"
+                  className="db-btn outline"
+                  onClick={() => {
+                    setShowAddPatient(false);
+                    setAddPatientError("");
+                  }}
+                >
+                  Cancel
+                </button>
+                <button className="db-btn primary" type="submit" disabled={addingPatient}>
+                  {addingPatient ? "Creating…" : "Create patient account"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ---------- Add doctor modal ---------- */}
+      {showAddDoctor && (
+        <div
+          className="db-modal-overlay"
+          onClick={() => {
+            setShowAddDoctor(false);
+            setAddDoctorError("");
+          }}
+        >
+          <div className="db-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="db-modal-title">Add doctor account</div>
+            <div className="db-modal-sub">Create login credentials for a new doctor.</div>
+            <form onSubmit={createDoctor}>
+              <div className="db-field">
+                <label className="db-label">Full name</label>
+                <input
+                  className="db-input"
+                  value={newDoctor.fullName}
+                  onChange={(e) => setNewDoctor({ ...newDoctor, fullName: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="db-field">
+                <label className="db-label">Email (must end in @appointmeddoctor.com)</label>
+                <input
+                  className="db-input"
+                  type="email"
+                  placeholder="dr.name@appointmeddoctor.com"
+                  value={newDoctor.email}
+                  onChange={(e) => setNewDoctor({ ...newDoctor, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="db-field">
+                <label className="db-label">Temporary password</label>
+                <input
+                  className="db-input"
+                  type="password"
+                  value={newDoctor.password}
+                  onChange={(e) => setNewDoctor({ ...newDoctor, password: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="db-field">
+                <label className="db-label">Specialization</label>
+                <input
+                  className="db-input"
+                  value={newDoctor.specialization}
+                  onChange={(e) => setNewDoctor({ ...newDoctor, specialization: e.target.value })}
+                  required
+                />
+              </div>
+
+              {addDoctorError && (
+                <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>{addDoctorError}</div>
+              )}
+
+              <div className="db-modal-actions">
+                <button
+                  type="button"
+                  className="db-btn outline"
+                  onClick={() => {
+                    setShowAddDoctor(false);
+                    setAddDoctorError("");
+                  }}
+                >
+                  Cancel
+                </button>
+                <button className="db-btn primary" type="submit" disabled={addingDoctor}>
+                  {addingDoctor ? "Creating…" : "Create doctor account"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ---------- Add admin modal ---------- */}
+      {showAddAdmin && (
+        <div
+          className="db-modal-overlay"
+          onClick={() => {
+            setShowAddAdmin(false);
+            setAddAdminError("");
+          }}
+        >
+          <div className="db-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="db-modal-title">Add admin account</div>
+            <div className="db-modal-sub">Create login credentials for a new admin.</div>
+            <form onSubmit={createAdmin}>
+              <div className="db-field">
+                <label className="db-label">Full name</label>
+                <input
+                  className="db-input"
+                  value={newAdmin.fullName}
+                  onChange={(e) => setNewAdmin({ ...newAdmin, fullName: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="db-field">
+                <label className="db-label">Email (must end in @appointmedadmin.com)</label>
+                <input
+                  className="db-input"
+                  type="email"
+                  placeholder="name@appointmedadmin.com"
+                  value={newAdmin.email}
+                  onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="db-field">
+                <label className="db-label">Temporary password</label>
+                <input
+                  className="db-input"
+                  type="password"
+                  value={newAdmin.password}
+                  onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                  required
+                />
+              </div>
+
+              {addAdminError && (
+                <div style={{ color: "var(--alert)", fontSize: 13, marginBottom: 12 }}>{addAdminError}</div>
+              )}
+
+              <div className="db-modal-actions">
+                <button
+                  type="button"
+                  className="db-btn outline"
+                  onClick={() => {
+                    setShowAddAdmin(false);
+                    setAddAdminError("");
+                  }}
+                >
+                  Cancel
+                </button>
+                <button className="db-btn primary" type="submit" disabled={addingAdmin}>
+                  {addingAdmin ? "Creating…" : "Create admin account"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ---------- View history modal ---------- */}
       {historyPatient && (
