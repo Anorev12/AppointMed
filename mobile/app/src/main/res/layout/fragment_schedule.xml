@@ -73,6 +73,16 @@
                 android:textAllCaps="false"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:textColor="@color/stamp" />
+
+            <Button
+                android:id="@+id/btnFilterUpcoming"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Upcoming"
+                android:textAllCaps="false"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:textColor="@color/stamp" />
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView

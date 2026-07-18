@@ -30,8 +30,10 @@ class ScheduleFragment : Fragment() {
     private var _binding: FragmentScheduleBinding? = null
     private val binding get() = _binding!!
 
-    private var showTodayOnly = false
+    private var currentFilter = Filter.ALL
     private var appointments: List<DoctorAppointment> = emptyList()
+
+    private enum class Filter { ALL, TODAY, UPCOMING }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -46,11 +48,15 @@ class ScheduleFragment : Fragment() {
         binding.rvSchedule.layoutManager = LinearLayoutManager(requireContext())
 
         binding.btnFilterAll.setOnClickListener {
-            showTodayOnly = false
+            currentFilter = Filter.ALL
             refreshList()
         }
         binding.btnFilterToday.setOnClickListener {
-            showTodayOnly = true
+            currentFilter = Filter.TODAY
+            refreshList()
+        }
+        binding.btnFilterUpcoming.setOnClickListener {
+            currentFilter = Filter.UPCOMING
             refreshList()
         }
 
@@ -110,10 +116,12 @@ class ScheduleFragment : Fragment() {
 
     private fun refreshList() {
         val today = LocalDate.now().toString()
-        val visible = if (showTodayOnly) {
-            appointments.filter { it.date == today }
-        } else {
-            appointments
+        val visible = when (currentFilter) {
+            Filter.TODAY -> appointments.filter { it.date == today }
+            Filter.UPCOMING -> appointments
+                .filter { it.date >= today && it.status == "confirmed" }
+                .sortedWith(compareBy({ it.date }, { it.time }))
+            Filter.ALL -> appointments
         }
 
         binding.rvSchedule.adapter = ScheduleAdapter(
