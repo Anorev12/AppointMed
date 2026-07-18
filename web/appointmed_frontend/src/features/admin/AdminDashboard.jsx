@@ -80,6 +80,11 @@ function setView(next) {
 }
   const [search, setSearch] = useState("");
 
+  // ---- Delete confirmation modal (doctor or patient) ----
+  // { type: "doctor" | "patient", target: { id, fullName } } | null
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+
   // ---- Patients ----
   const [patients, setPatients] = useState([]);
   const [patientsLoading, setPatientsLoading] = useState(true);
@@ -440,7 +445,7 @@ function setView(next) {
   }
 
   async function deleteDoctor(doctor) {
-    if (!window.confirm(`Delete ${doctor.fullName}'s account? This can't be undone.`)) return;
+    setConfirmDelete(null);
     setDeletingDoctorId(doctor.id);
     setDoctorsError("");
     try {
@@ -544,7 +549,7 @@ function setView(next) {
   }
 
   async function deletePatient(patient) {
-    if (!window.confirm(`Delete ${patient.fullName}'s account? This can't be undone.`)) return;
+    setConfirmDelete(null);
     setDeletingPatientId(patient.id);
     setPatientsError("");
     try {
@@ -960,7 +965,7 @@ function setView(next) {
                               <button
                                 className="db-btn danger sm"
                                 disabled={deletingPatientId === p.id}
-                                onClick={() => deletePatient(p)}
+                                onClick={() => setConfirmDelete({ type: "patient", target: p })}
                               >
                                 {deletingPatientId === p.id ? "Deleting…" : "Delete"}
                               </button>
@@ -1033,7 +1038,7 @@ function setView(next) {
                                 <button
                                   className="db-btn danger sm"
                                   disabled={deletingDoctorId === d.id}
-                                  onClick={() => deleteDoctor(d)}
+                                  onClick={() => setConfirmDelete({ type: "doctor", target: d })}
                                 >
                                   {deletingDoctorId === d.id ? "Deleting…" : "Delete"}
                                 </button>
@@ -1419,6 +1424,32 @@ function setView(next) {
           )}
         </div>
       </div>
+
+      {/* ---------- Delete confirmation modal ---------- */}
+      {confirmDelete && (
+        <div className="db-modal-overlay" onClick={() => setConfirmDelete(null)}>
+          <div className="db-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <div className="db-modal-title">Delete {confirmDelete.target.fullName}?</div>
+            <div className="db-modal-sub">This can't be undone.</div>
+            <div className="db-modal-actions">
+              <button type="button" className="db-btn outline" onClick={() => setConfirmDelete(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="db-btn danger"
+                onClick={() =>
+                  confirmDelete.type === "doctor"
+                    ? deleteDoctor(confirmDelete.target)
+                    : deletePatient(confirmDelete.target)
+                }
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ---------- Add patient modal ---------- */}
       {showAddPatient && (
