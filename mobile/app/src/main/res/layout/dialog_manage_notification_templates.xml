@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:text="Tap a template to edit its subject line and add an optional note shown inside the email."
+        android:textColor="@color/ink_soft"
+        android:textSize="12.5sp" />
+
+    <TextView
+        android:id="@+id/tvTemplatesLoading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Loading…"
+        android:textColor="@color/ink_soft"
+        android:textSize="13.5sp" />
+
+    <TextView
+        android:id="@+id/tvTemplatesError"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/danger"
+        android:textSize="13.5sp"
+        android:visibility="gone"
+        tools:text="Can't reach the server." />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvNotificationTemplates"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
+
+</LinearLayout>

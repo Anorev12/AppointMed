@@ -68,6 +68,22 @@
             android:text="Manage admin accounts" />
 
         <Button
+            android:id="@+id/btnNotificationTemplates"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Notification templates" />
+
+        <Button
+            android:id="@+id/btnReminderSchedule"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Reminder schedule" />
+
+        <Button
             android:id="@+id/btnAdminLogout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

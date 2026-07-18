@@ -8,8 +8,12 @@ import com.example.appointmed.features.admin.models.AvailabilityResponse
 import com.example.appointmed.features.admin.models.DoctorCreateRequest
 import com.example.appointmed.features.admin.models.DoctorResponse
 import com.example.appointmed.features.admin.models.DoctorStatusUpdateRequest
+import com.example.appointmed.features.admin.models.NotificationTemplateResponse
+import com.example.appointmed.features.admin.models.NotificationTemplateUpdateRequest
 import com.example.appointmed.features.admin.models.PasswordChangeRequest
 import com.example.appointmed.features.admin.models.PatientCreateRequest
+import com.example.appointmed.features.admin.models.ReminderSettingsResponse
+import com.example.appointmed.features.admin.models.ReminderSettingsUpdateRequest
 import com.example.appointmed.features.admin.models.UnavailableDateRequest
 import com.example.appointmed.features.admin.models.UnavailableDatesResponse
 import com.example.appointmed.features.admin.models.UpdateScheduleRequest
@@ -95,4 +99,24 @@ interface AdminApiService {
 
     @GET("api/admin/reports")
     suspend fun getReport(): Response<AdminReportResponse>
+
+    // ---- Notification settings (FR-024) ----
+
+    @GET("api/admin/settings/templates")
+    suspend fun listNotificationTemplates(): Response<List<NotificationTemplateResponse>>
+
+    @PUT("api/admin/settings/templates/{type}")
+    suspend fun updateNotificationTemplate(
+        @Path("type") type: String,
+        @Body request: NotificationTemplateUpdateRequest
+    ): Response<NotificationTemplateResponse>
+
+    @POST("api/admin/settings/templates/{type}/reset")
+    suspend fun resetNotificationTemplate(@Path("type") type: String): Response<NotificationTemplateResponse>
+
+    @GET("api/admin/settings/reminders")
+    suspend fun getReminderSettings(): Response<ReminderSettingsResponse>
+
+    @PUT("api/admin/settings/reminders")
+    suspend fun updateReminderSettings(@Body request: ReminderSettingsUpdateRequest): Response<ReminderSettingsResponse>
 }
