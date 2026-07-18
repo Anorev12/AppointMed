@@ -1,5 +1,6 @@
 package com.example.appointmed.features.patient.adapters
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -26,6 +27,10 @@ class DoctorAdapter(
         holder.binding.tvDoctorName.text = doctor.name
         holder.binding.tvDoctorSpec.text = doctor.specialization
 
+        val onLeave = doctor.status == "ON_LEAVE"
+        holder.binding.tvDoctorLeaveBadge.visibility = if (onLeave) View.VISIBLE else View.GONE
+        holder.binding.root.alpha = if (onLeave) 0.6f else 1.0f
+
         val isSelected = doctor.id == selectedId
         val context = holder.binding.root.context
         holder.binding.doctorCard.strokeColor = ContextCompat.getColor(
@@ -34,6 +39,7 @@ class DoctorAdapter(
         holder.binding.doctorCard.strokeWidth = if (isSelected) 2 else 1
 
         holder.binding.root.setOnClickListener {
+            if (onLeave) return@setOnClickListener
             selectedId = doctor.id
             notifyDataSetChanged()
             onSelect(doctor)

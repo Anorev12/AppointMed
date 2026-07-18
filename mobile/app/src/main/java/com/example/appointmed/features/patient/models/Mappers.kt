@@ -17,5 +17,6 @@ fun AppointmentApiResponse.toUi(): Appointment = Appointment(
 fun DoctorApiResponse.toUi(): Doctor = Doctor(
     id = id,
     name = fullName,
-    specialization = specialization
+    specialization = specialization,
+    status = status
 )

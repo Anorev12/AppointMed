@@ -5,5 +5,6 @@ data class DoctorApiResponse(
     val id: Long,
     val fullName: String,
     val email: String,
-    val specialization: String
+    val specialization: String,
+    val status: String
 )
