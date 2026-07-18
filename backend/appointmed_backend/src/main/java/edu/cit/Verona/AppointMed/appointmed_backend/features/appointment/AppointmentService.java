@@ -338,13 +338,18 @@ public class AppointmentService {
 
     /** Available 30-minute slots for a doctor on a given date, marking already-booked ones as reserved. */
     public List<SlotResponse> getAvailableSlots(Long doctorId, String dateStr) {
-        doctorRepository.findById(doctorId)
+        Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new IllegalArgumentException("Doctor not found."));
 
         LocalDate date = parseDate(dateStr);
-        AvailabilityResponse availability = availabilityService.getAvailability(doctorId);
 
         List<SlotResponse> slots = new ArrayList<>();
+
+        if ("ON_LEAVE".equals(doctor.getStatus())) {
+            return slots; // empty — doctor isn't accepting bookings right now
+        }
+
+        AvailabilityResponse availability = availabilityService.getAvailability(doctorId);
 
         String dayAbbrev = date.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
         Set<String> workingDays = availability.getWorkingDays();
@@ -386,6 +391,12 @@ public class AppointmentService {
         }
         if (date.equals(LocalDate.now()) && !time.isAfter(LocalTime.now())) {
             throw new IllegalArgumentException("That time has already passed today.");
+        }
+
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new IllegalArgumentException("Doctor not found."));
+        if ("ON_LEAVE".equals(doctor.getStatus())) {
+            throw new IllegalArgumentException("This doctor is currently on leave and not accepting bookings.");
         }
 
         AvailabilityResponse availability = availabilityService.getAvailability(doctorId);
