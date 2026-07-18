@@ -1189,7 +1189,7 @@ function setView(next) {
                           <button
                             key={t.type}
                             type="button"
-                            className={`db-nav-item${selectedTemplateType === t.type ? " is-active" : ""}`}
+                            className={`db-tmpl-item${selectedTemplateType === t.type ? " is-active" : ""}`}
                             style={{ width: "100%", textAlign: "left", marginBottom: 4 }}
                             onClick={() => setSelectedTemplateType(t.type)}
                           >
