@@ -35,14 +35,39 @@ class DoctorProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val user = TokenManager(requireContext()).getUser()
-        binding.etDoctorFullName.setText(user?.fullName)
-        binding.etDoctorEmail.setText(user?.email)
-        binding.etDoctorSpecialization.setText(user?.specialization)
+        // Show the cached login/register values immediately so the screen
+        // isn't blank while the network call is in flight...
+        val cachedUser = TokenManager(requireContext()).getUser()
+        binding.etDoctorFullName.setText(cachedUser?.fullName)
+        binding.etDoctorEmail.setText(cachedUser?.email)
+
+        // ...then refresh from GET /api/doctor/profile, which is the only
+        // source that actually carries specialization (login/register's
+        // AuthResponse never includes it).
+        loadProfile()
 
         binding.btnChangePassword.setOnClickListener { showChangePasswordDialog() }
         binding.btnDoctorLogout.setOnClickListener {
             (requireActivity() as DoctorDashboardActivity).logout()
+        }
+    }
+
+    private fun loadProfile() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.getDoctorProfileApi(requireContext()).getProfile()
+                if (response.isSuccessful) {
+                    response.body()?.let { profile ->
+                        binding.etDoctorFullName.setText(profile.fullName)
+                        binding.etDoctorEmail.setText(profile.email)
+                        binding.etDoctorSpecialization.setText(profile.specialization)
+                    }
+                }
+                // On failure, silently keep the cached values already shown above —
+                // this tab isn't worth an error banner if the profile fetch fails.
+            } catch (e: Exception) {
+                // Same reasoning: keep showing cached values.
+            }
         }
     }
 
