@@ -55,7 +55,7 @@ function setView(next) {
   const [apptsLoading, setApptsLoading] = useState(true);
   const [apptsError, setApptsError] = useState("");
   const [actioningId, setActioningId] = useState(null);
-  const [filter, setFilter] = useState("all"); // all | today
+  const [filter, setFilter] = useState("all"); // all | today | upcoming
 
   // ---- Availability state (backed by the API) ----
   const [workingDays, setWorkingDays] = useState({
@@ -141,7 +141,13 @@ function setView(next) {
   const upcomingCount = appointments.filter((a) => a.date >= today && a.status === "CONFIRMED").length;
 
   const visibleAppointments =
-    filter === "today" ? appointments.filter((a) => a.date === today) : appointments;
+    filter === "today"
+      ? appointments.filter((a) => a.date === today)
+      : filter === "upcoming"
+      ? appointments
+          .filter((a) => a.date >= today && a.status === "CONFIRMED")
+          .sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date)))
+      : appointments;
 
   function toggleDay(day) {
     setWorkingDays((prev) => ({ ...prev, [day]: !prev[day] }));
@@ -369,6 +375,12 @@ function setView(next) {
                       onClick={() => setFilter("today")}
                     >
                       Today
+                    </button>
+                    <button
+                      className={`db-btn sm ${filter === "upcoming" ? "primary" : "outline"}`}
+                      onClick={() => setFilter("upcoming")}
+                    >
+                      Upcoming
                     </button>
                   </div>
                 </div>
