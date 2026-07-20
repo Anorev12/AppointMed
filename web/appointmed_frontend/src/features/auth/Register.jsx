@@ -168,8 +168,7 @@ export default function Register({ onRegister, onNavigateToLogin }) {
           </div>
 
           <p className="am-foot-note">
-            Reminders are sent 24 hours and 1 hour before every visit, by SMS or
-            email — so nobody forgets.
+            Reminders are sent 24 hours and 1 hour before every visit, by email — so nobody forgets.
           </p>
 
           <div className="am-perf" />
