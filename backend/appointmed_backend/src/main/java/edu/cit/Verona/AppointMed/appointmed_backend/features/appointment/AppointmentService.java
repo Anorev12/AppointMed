@@ -42,6 +42,10 @@ public class AppointmentService {
 
     private static final int SLOT_MINUTES = 30;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
+    // Render's servers run in UTC, but the clinic operates in Philippine time. Every "now" used for
+    // past/future comparisons must be anchored to this zone, or a booking that looks "in the future"
+    // to the UTC server clock can already be hours in the past for the patient.
+    private static final java.time.ZoneId CLINIC_ZONE = java.time.ZoneId.of("Asia/Manila");
 
     private final AppointmentRepository appointmentRepository;
     private final AvailabilityService availabilityService;
@@ -264,7 +268,7 @@ public class AppointmentService {
     private void requireBeforeCutoff(Appointment appointment) {
         LocalDateTime appointmentStart = LocalDateTime.of(appointment.getDate(), appointment.getTime());
         LocalDateTime cutoff = appointmentStart.minusHours(cutoffHours);
-        if (LocalDateTime.now().isAfter(cutoff)) {
+        if (LocalDateTime.now(CLINIC_ZONE).isAfter(cutoff)) {
             throw new IllegalArgumentException(
                     "This appointment can no longer be changed — it's within the " + cutoffHours
                             + "-hour cutoff period. Please contact the clinic directly.");
@@ -370,8 +374,8 @@ public class AppointmentService {
                 .map(Appointment::getTime)
                 .collect(Collectors.toSet());
 
-        boolean isToday = date.equals(LocalDate.now());
-        LocalTime now = LocalTime.now();
+        boolean isToday = date.equals(LocalDate.now(CLINIC_ZONE));
+        LocalTime now = LocalTime.now(CLINIC_ZONE);
 
         LocalTime cursor = start;
         while (cursor.isBefore(end)) {
@@ -386,10 +390,10 @@ public class AppointmentService {
 
     /** Re-validates a requested slot server-side — never trust that the frontend only offered valid times. */
     private void validateSlot(Long doctorId, LocalDate date, LocalTime time, Long patientId) {
-        if (date.isBefore(LocalDate.now())) {
+        if (date.isBefore(LocalDate.now(CLINIC_ZONE))) {
             throw new IllegalArgumentException("Can't book an appointment in the past.");
         }
-        if (date.equals(LocalDate.now()) && !time.isAfter(LocalTime.now())) {
+        if (date.equals(LocalDate.now(CLINIC_ZONE)) && !time.isAfter(LocalTime.now(CLINIC_ZONE))) {
             throw new IllegalArgumentException("That time has already passed today.");
         }
 

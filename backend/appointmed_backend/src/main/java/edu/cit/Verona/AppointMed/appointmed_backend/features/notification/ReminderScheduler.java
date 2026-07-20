@@ -40,6 +40,9 @@ public class ReminderScheduler {
 
     private static final long CHECK_INTERVAL_MS = 5 * 60 * 1000; // every 5 minutes
     private static final long WINDOW_MINUTES = 15; // catch window per check
+    // Render's servers run in UTC, but appointment.date/time are clinic-local (Philippine time).
+    // Comparing against LocalDateTime.now() in UTC would fire reminders hours early or late.
+    private static final java.time.ZoneId CLINIC_ZONE = java.time.ZoneId.of("Asia/Manila");
 
     private final AppointmentRepository appointmentRepository;
     private final PatientRepository patientRepository;
@@ -61,7 +64,7 @@ public class ReminderScheduler {
 
     @Scheduled(fixedRate = CHECK_INTERVAL_MS)
     public void sendDueReminders() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(CLINIC_ZONE);
         List<Integer> offsetHours = reminderSettingsService.getOffsetHours(); // FR-024, admin-configurable
         var confirmed = appointmentRepository.findByStatus("CONFIRMED");
 
@@ -91,3 +94,4 @@ public class ReminderScheduler {
         }, () -> log.warn("Skipping reminder for appointment {} — patient {} no longer exists", a.getReference(), a.getPatientId()));
     }
 }
+ 
