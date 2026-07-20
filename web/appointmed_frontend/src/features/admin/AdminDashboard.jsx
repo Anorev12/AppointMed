@@ -47,6 +47,13 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Mirrors the backend's cancelByAdmin check: an appointment is only
+// cancellable by an admin while it's still in the future (date + time,
+// not just the date), same rule AppointmentService.cancelByAdmin enforces.
+function isUpcoming(date, time) {
+  return new Date(`${date}T${time}`) > new Date();
+}
+
 export default function AdminDashboard({ adminName = "Admin", onLogout }) {
   const location = useLocation();
 const navigate = useNavigate();
@@ -817,10 +824,10 @@ function setView(next) {
                       <tbody>
                         {appointments.slice(0, 4).map((a) => (
                           <tr key={a.id}>
-                            <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, whiteSpace: "nowrap" }}>{a.reference}</td>
+                            <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
                             <td>{a.patientName}</td>
                             <td>{a.doctorName}</td>
-                            <td style={{ whiteSpace: "nowrap" }}>{a.date} · {formatTime12h(a.time)}</td>
+                            <td>{a.date} · {formatTime12h(a.time)}</td>
                             <td>
                               <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
                             </td>
@@ -905,7 +912,7 @@ function setView(next) {
                             <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
                           </td>
                           <td>
-                            {a.status !== "CANCELLED" && (
+                            {a.status === "CONFIRMED" && isUpcoming(a.date, a.time) && (
                               <button
                                 className="db-btn danger sm"
                                 disabled={cancellingId === a.id}
@@ -1685,7 +1692,7 @@ function setView(next) {
       {/* ---------- View history modal ---------- */}
       {historyPatient && (
         <div className="db-modal-overlay" onClick={closeHistory}>
-          <div className="db-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
+          <div className="db-modal" onClick={(e) => e.stopPropagation()}>
             <div className="db-modal-title">{historyPatient.fullName}</div>
             <div className="db-modal-sub">Appointment history</div>
 
@@ -1708,9 +1715,9 @@ function setView(next) {
                 <tbody>
                   {historyAppts.map((a) => (
                     <tr key={a.id}>
-                      <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, whiteSpace: "nowrap" }}>{a.reference}</td>
+                      <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
                       <td>{a.doctorName}</td>
-                      <td style={{ whiteSpace: "nowrap" }}>{a.date} · {formatTime12h(a.time)}</td>
+                      <td>{a.date} · {formatTime12h(a.time)}</td>
                       <td>
                         <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
                       </td>
