@@ -817,10 +817,10 @@ function setView(next) {
                       <tbody>
                         {appointments.slice(0, 4).map((a) => (
                           <tr key={a.id}>
-                            <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
+                            <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, whiteSpace: "nowrap" }}>{a.reference}</td>
                             <td>{a.patientName}</td>
                             <td>{a.doctorName}</td>
-                            <td>{a.date} · {formatTime12h(a.time)}</td>
+                            <td style={{ whiteSpace: "nowrap" }}>{a.date} · {formatTime12h(a.time)}</td>
                             <td>
                               <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
                             </td>
@@ -1685,7 +1685,7 @@ function setView(next) {
       {/* ---------- View history modal ---------- */}
       {historyPatient && (
         <div className="db-modal-overlay" onClick={closeHistory}>
-          <div className="db-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="db-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
             <div className="db-modal-title">{historyPatient.fullName}</div>
             <div className="db-modal-sub">Appointment history</div>
 
@@ -1708,9 +1708,9 @@ function setView(next) {
                 <tbody>
                   {historyAppts.map((a) => (
                     <tr key={a.id}>
-                      <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
+                      <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, whiteSpace: "nowrap" }}>{a.reference}</td>
                       <td>{a.doctorName}</td>
-                      <td>{a.date} · {formatTime12h(a.time)}</td>
+                      <td style={{ whiteSpace: "nowrap" }}>{a.date} · {formatTime12h(a.time)}</td>
                       <td>
                         <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
                       </td>

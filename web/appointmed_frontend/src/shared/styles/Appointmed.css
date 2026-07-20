@@ -132,7 +132,9 @@
 }
 
 .am-slot-time{
-  width:55px;
+  width:64px;
+  flex-shrink:0;
+  white-space:nowrap;
   font-family:var(--font-mono);
   font-size:12px;
 }
