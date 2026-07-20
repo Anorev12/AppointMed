@@ -17,7 +17,7 @@ import edu.cit.Verona.AppointMed.appointmed_backend.features.patient.repository.
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+ 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
-
+ 
 /**
  * Booking lives here rather than in the patient or doctor slices — it's a
  * cross-cutting concern that needs the doctor's availability rules
@@ -39,20 +39,20 @@ import java.util.stream.Collectors;
  */
 @Service
 public class AppointmentService {
-
+ 
     private static final int SLOT_MINUTES = 30;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
     // Render's servers run in UTC, but the clinic operates in Philippine time. Every "now" used for
     // past/future comparisons must be anchored to this zone, or a booking that looks "in the future"
     // to the UTC server clock can already be hours in the past for the patient.
     private static final java.time.ZoneId CLINIC_ZONE = java.time.ZoneId.of("Asia/Manila");
-
+ 
     private final AppointmentRepository appointmentRepository;
     private final AvailabilityService availabilityService;
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
     private final NotificationService notificationService;
-
+ 
     /**
      * Business rule: "Patients may reschedule or cancel an appointment only
      * before the cutoff period configured by the clinic administrator."
@@ -62,7 +62,7 @@ public class AppointmentService {
      */
     @Value("${appointment.cutoff-hours:2}")
     private int cutoffHours;
-
+ 
     public AppointmentService(AppointmentRepository appointmentRepository,
                                AvailabilityService availabilityService,
                                DoctorRepository doctorRepository,
@@ -74,24 +74,24 @@ public class AppointmentService {
         this.patientRepository = patientRepository;
         this.notificationService = notificationService;
     }
-
+ 
     @Transactional
     public AppointmentResponse book(Long patientId, AppointmentBookRequest request) {
         if (request.getDoctorId() == null) {
             throw new IllegalArgumentException("Select a doctor.");
         }
-
+ 
         Doctor doctor = doctorRepository.findById(request.getDoctorId())
                 .orElseThrow(() -> new IllegalArgumentException("Doctor not found."));
-
+ 
         LocalDate date = parseDate(request.getDate());
         LocalTime time = parseTime(request.getTime());
-
+ 
         validateSlot(doctor.getId(), date, time, patientId);
-
+ 
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new IllegalArgumentException("Patient not found."));
-
+ 
         Appointment appointment = new Appointment();
         appointment.setPatientId(patientId);
         appointment.setPatientName(patient.getFullName());
@@ -102,17 +102,17 @@ public class AppointmentService {
         appointment.setTime(time);
         appointment.setStatus("CONFIRMED");
         appointment.setReference("PENDING-" + java.util.UUID.randomUUID()); // unique placeholder until we have an id — must never collide across concurrent bookings
-
+ 
         appointment = appointmentRepository.save(appointment);
         appointment.setReference(String.format("APT-%06d", appointment.getId()));
         appointment = appointmentRepository.save(appointment);
-
+ 
         notificationService.notifyBookingConfirmation(appointment, patient.getEmail()); // FR-013/FR-021
         notificationService.notifyNewBookingToDoctor(appointment, doctor.getEmail());   // FR-027
-
+ 
         return toResponse(appointment);
     }
-
+ 
     /**
      * FR-012: "maintain and display a complete, searchable appointment
      * history". status/keyword/from/to are all optional — when every
@@ -129,11 +129,11 @@ public class AppointmentService {
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
-
+ 
     public List<AppointmentResponse> listForPatient(Long patientId) {
         return listForPatient(patientId, null, null, null, null);
     }
-
+ 
     /**
      * FR-035: admin-wide view across every patient/doctor, with the same
      * optional status/keyword/from/to filters as the patient history search.
@@ -142,11 +142,11 @@ public class AppointmentService {
      */
     public List<AppointmentResponse> listAll(String status, String keyword, String from, String to) {
         List<Appointment> appointments = appointmentRepository.findAllByOrderByDateAscTimeAsc();
-
+ 
         LocalDate fromDate = (from == null || from.isBlank()) ? null : parseDate(from);
         LocalDate toDate = (to == null || to.isBlank()) ? null : parseDate(to);
         String needle = (keyword == null || keyword.isBlank()) ? null : keyword.trim().toLowerCase(Locale.ROOT);
-
+ 
         return appointments.stream()
                 .filter(a -> status == null || status.isBlank() || a.getStatus().equalsIgnoreCase(status.trim()))
                 .filter(a -> fromDate == null || !a.getDate().isBefore(fromDate))
@@ -159,13 +159,13 @@ public class AppointmentService {
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
-
+ 
     /** Shared status/date-range/keyword filter used by both the patient and admin history views. */
     private List<Appointment> applyFilters(List<Appointment> appointments, String status, String keyword, String from, String to) {
         LocalDate fromDate = (from == null || from.isBlank()) ? null : parseDate(from);
         LocalDate toDate = (to == null || to.isBlank()) ? null : parseDate(to);
         String needle = (keyword == null || keyword.isBlank()) ? null : keyword.trim().toLowerCase(Locale.ROOT);
-
+ 
         return appointments.stream()
                 .filter(a -> status == null || status.isBlank() || a.getStatus().equalsIgnoreCase(status.trim()))
                 .filter(a -> fromDate == null || !a.getDate().isBefore(fromDate))
@@ -176,19 +176,19 @@ public class AppointmentService {
                         || a.getReference().toLowerCase(Locale.ROOT).contains(needle))
                 .collect(Collectors.toList());
     }
-
+ 
     public List<AppointmentResponse> listForDoctor(Long doctorId) {
         return appointmentRepository.findByDoctorIdOrderByDateAscTimeAsc(doctorId)
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
-
+ 
     @Transactional
     public AppointmentResponse cancel(Long patientId, Long appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Appointment not found."));
-
+ 
         if (!appointment.getPatientId().equals(patientId)) {
             throw new SecurityException("This appointment doesn't belong to you.");
         }
@@ -203,18 +203,18 @@ public class AppointmentService {
         if (!appointment.isNeedsReschedule()) {
             requireBeforeCutoff(appointment);
         }
-
+ 
         appointment.setStatus("CANCELLED");
         appointment.setNeedsReschedule(false);
         appointment = appointmentRepository.save(appointment);
-
+ 
         Appointment finalAppointment = appointment;
         patientRepository.findById(patientId).ifPresent(p ->
                 notificationService.notifyCancellation(finalAppointment, p.getEmail(), "you")); // FR-023
-
+ 
         return toResponse(appointment);
     }
-
+ 
     /**
      * FR-011: lets a patient move a confirmed appointment to a new date/time
      * with the same doctor. Re-runs the same slot validation booking uses
@@ -226,7 +226,7 @@ public class AppointmentService {
     public AppointmentResponse reschedule(Long patientId, Long appointmentId, AppointmentRescheduleRequest request) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Appointment not found."));
-
+ 
         if (!appointment.getPatientId().equals(patientId)) {
             throw new SecurityException("This appointment doesn't belong to you.");
         }
@@ -238,32 +238,32 @@ public class AppointmentService {
         if (!appointment.isNeedsReschedule()) {
             requireBeforeCutoff(appointment);
         }
-
+ 
         LocalDate newDate = parseDate(request.getDate());
         LocalTime newTime = parseTime(request.getTime());
-
+ 
         if (newDate.equals(appointment.getDate()) && newTime.equals(appointment.getTime())) {
             throw new IllegalArgumentException("That's already your current appointment time.");
         }
-
+ 
         validateSlot(appointment.getDoctorId(), newDate, newTime, patientId);
-
+ 
         String oldDateStr = appointment.getDate().toString();
         String oldTimeStr = edu.cit.Verona.AppointMed.appointmed_backend.features.notification.NotificationTimeFormatter.format(appointment.getTime());
-
+ 
         appointment.setDate(newDate);
         appointment.setTime(newTime);
         appointment.setNeedsReschedule(false);
         // Reference number and status are preserved — this is the same booking, just moved.
         appointment = appointmentRepository.save(appointment);
-
+ 
         Appointment finalAppointment = appointment;
         patientRepository.findById(patientId).ifPresent(p ->
                 notificationService.notifyReschedule(finalAppointment, p.getEmail(), oldDateStr, oldTimeStr)); // FR-023
-
+ 
         return toResponse(appointment);
     }
-
+ 
     /** Business rule: no cancel/reschedule once we're inside the configured cutoff window. */
     private void requireBeforeCutoff(Appointment appointment) {
         LocalDateTime appointmentStart = LocalDateTime.of(appointment.getDate(), appointment.getTime());
@@ -274,109 +274,123 @@ public class AppointmentService {
                             + "-hour cutoff period. Please contact the clinic directly.");
         }
     }
-
+ 
     /**
      * FR-016/FR-035: admin override cancel — unlike the patient-initiated
      * cancel(), this ignores the reschedule cutoff window and doesn't check
      * appointment ownership, since an admin can act on any booking.
+     *
+     * Still only valid for an upcoming CONFIRMED appointment: a COMPLETED
+     * visit already happened and shouldn't be reopened, and an appointment
+     * whose date/time has already passed isn't "upcoming" even if nobody
+     * marked it complete. Uses CLINIC_ZONE for the past/future check, same
+     * as every other now()-comparison in this class.
      */
     @Transactional
     public AppointmentResponse cancelByAdmin(Long appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Appointment not found."));
-
+ 
         if ("CANCELLED".equals(appointment.getStatus())) {
             throw new IllegalArgumentException("This appointment is already cancelled.");
         }
-
+        if ("COMPLETED".equals(appointment.getStatus())) {
+            throw new IllegalArgumentException("A completed appointment can't be cancelled.");
+        }
+ 
+        LocalDateTime appointmentStart = LocalDateTime.of(appointment.getDate(), appointment.getTime());
+        if (appointmentStart.isBefore(LocalDateTime.now(CLINIC_ZONE))) {
+            throw new IllegalArgumentException("This appointment has already passed and can no longer be cancelled.");
+        }
+ 
         appointment.setStatus("CANCELLED");
         appointment = appointmentRepository.save(appointment);
-
+ 
         Appointment finalAppointment = appointment;
         patientRepository.findById(finalAppointment.getPatientId()).ifPresent(p ->
                 notificationService.notifyCancellation(finalAppointment, p.getEmail(), "the clinic administrator")); // FR-023
-
+ 
         return toResponse(appointment);
     }
-
+ 
     /** Doctor-initiated cancellation — e.g. the doctor can't make that slot after all. */
     @Transactional
     public AppointmentResponse cancelByDoctor(Long doctorId, Long appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Appointment not found."));
-
+ 
         if (!appointment.getDoctorId().equals(doctorId)) {
             throw new SecurityException("This appointment doesn't belong to you.");
         }
         if ("CANCELLED".equals(appointment.getStatus())) {
             throw new IllegalArgumentException("This appointment is already cancelled.");
         }
-
+ 
         appointment.setStatus("CANCELLED");
         appointment = appointmentRepository.save(appointment);
-
+ 
         Appointment finalAppointment = appointment;
         patientRepository.findById(finalAppointment.getPatientId()).ifPresent(p ->
                 notificationService.notifyCancellation(finalAppointment, p.getEmail(), "your doctor")); // FR-023
-
+ 
         return toResponse(appointment);
     }
-
+ 
     /** Lets a doctor close out a visit that actually happened, for record-keeping. */
     @Transactional
     public AppointmentResponse completeByDoctor(Long doctorId, Long appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Appointment not found."));
-
+ 
         if (!appointment.getDoctorId().equals(doctorId)) {
             throw new SecurityException("This appointment doesn't belong to you.");
         }
         if (!"CONFIRMED".equals(appointment.getStatus())) {
             throw new IllegalArgumentException("Only confirmed appointments can be marked complete.");
         }
-
+ 
         appointment.setStatus("COMPLETED");
         appointment = appointmentRepository.save(appointment);
         return toResponse(appointment);
     }
-
+ 
     /** Available 30-minute slots for a doctor on a given date, marking already-booked ones as reserved. */
     public List<SlotResponse> getAvailableSlots(Long doctorId, String dateStr) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new IllegalArgumentException("Doctor not found."));
-
+ 
         LocalDate date = parseDate(dateStr);
-
+ 
         List<SlotResponse> slots = new ArrayList<>();
-
+ 
         if ("ON_LEAVE".equals(doctor.getStatus())) {
             return slots; // empty — doctor isn't accepting bookings right now
         }
-
+ 
         AvailabilityResponse availability = availabilityService.getAvailability(doctorId);
-
+ 
         String dayAbbrev = date.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
         Set<String> workingDays = availability.getWorkingDays();
         boolean isWorkingDay = workingDays != null && workingDays.contains(dayAbbrev);
         boolean isMarkedUnavailable = availability.getUnavailableDates() != null
                 && availability.getUnavailableDates().contains(date.toString());
-
+ 
         if (!isWorkingDay || isMarkedUnavailable) {
             return slots; // empty — doctor doesn't work that day
         }
-
+ 
         LocalTime start = LocalTime.parse(availability.getStartTime(), TIME_FMT);
         LocalTime end = LocalTime.parse(availability.getEndTime(), TIME_FMT);
-
+ 
         Set<LocalTime> bookedTimes = appointmentRepository
                 .findByDoctorIdAndDateAndStatus(doctorId, date, "CONFIRMED")
                 .stream()
                 .map(Appointment::getTime)
                 .collect(Collectors.toSet());
-
+ 
         boolean isToday = date.equals(LocalDate.now(CLINIC_ZONE));
         LocalTime now = LocalTime.now(CLINIC_ZONE);
-
+ 
         LocalTime cursor = start;
         while (cursor.isBefore(end)) {
             boolean isPast = isToday && !cursor.isAfter(now);
@@ -384,10 +398,10 @@ public class AppointmentService {
             slots.add(new SlotResponse(cursor.format(TIME_FMT), reserved));
             cursor = cursor.plusMinutes(SLOT_MINUTES);
         }
-
+ 
         return slots;
     }
-
+ 
     /** Re-validates a requested slot server-side — never trust that the frontend only offered valid times. */
     private void validateSlot(Long doctorId, LocalDate date, LocalTime time, Long patientId) {
         if (date.isBefore(LocalDate.now(CLINIC_ZONE))) {
@@ -396,40 +410,40 @@ public class AppointmentService {
         if (date.equals(LocalDate.now(CLINIC_ZONE)) && !time.isAfter(LocalTime.now(CLINIC_ZONE))) {
             throw new IllegalArgumentException("That time has already passed today.");
         }
-
+ 
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new IllegalArgumentException("Doctor not found."));
         if ("ON_LEAVE".equals(doctor.getStatus())) {
             throw new IllegalArgumentException("This doctor is currently on leave and not accepting bookings.");
         }
-
+ 
         AvailabilityResponse availability = availabilityService.getAvailability(doctorId);
         String dayAbbrev = date.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
-
+ 
         if (availability.getWorkingDays() == null || !availability.getWorkingDays().contains(dayAbbrev)) {
             throw new IllegalArgumentException("This doctor isn't available on that day.");
         }
         if (availability.getUnavailableDates() != null && availability.getUnavailableDates().contains(date.toString())) {
             throw new IllegalArgumentException("This doctor is unavailable on that date.");
         }
-
+ 
         LocalTime start = LocalTime.parse(availability.getStartTime(), TIME_FMT);
         LocalTime end = LocalTime.parse(availability.getEndTime(), TIME_FMT);
         if (time.isBefore(start) || !time.isBefore(end)) {
             throw new IllegalArgumentException("That time is outside the doctor's working hours.");
         }
-
+ 
         if (appointmentRepository.existsByDoctorIdAndDateAndTimeAndStatus(doctorId, date, time, "CONFIRMED")) {
             throw new IllegalArgumentException("That slot was just booked by someone else. Please pick another.");
         }
-
+ 
         // Prevent a patient from holding two CONFIRMED appointments — even with
         // different doctors — at the same date and time.
         if (appointmentRepository.existsByPatientIdAndDateAndTimeAndStatus(patientId, date, time, "CONFIRMED")) {
             throw new IllegalArgumentException("You already have a confirmed appointment at this date and time with another doctor.");
         }
     }
-
+ 
     private AppointmentResponse toResponse(Appointment a) {
         return new AppointmentResponse(
                 a.getId(),
@@ -444,7 +458,7 @@ public class AppointmentService {
                 a.isNeedsReschedule()
         );
     }
-
+ 
     private LocalDate parseDate(String value) {
         try {
             return LocalDate.parse(value);
@@ -452,7 +466,7 @@ public class AppointmentService {
             throw new IllegalArgumentException("Date must be in yyyy-MM-dd format.");
         }
     }
-
+ 
     private LocalTime parseTime(String value) {
         try {
             return LocalTime.parse(value, TIME_FMT);
@@ -461,3 +475,4 @@ public class AppointmentService {
         }
     }
 }
+ 
