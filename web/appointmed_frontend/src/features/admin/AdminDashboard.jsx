@@ -1692,7 +1692,11 @@ function setView(next) {
       {/* ---------- View history modal ---------- */}
       {historyPatient && (
         <div className="db-modal-overlay" onClick={closeHistory}>
-          <div className="db-modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="db-modal db-modal-history"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 600, overflowX: "hidden" }}
+          >
             <div className="db-modal-title">{historyPatient.fullName}</div>
             <div className="db-modal-sub">Appointment history</div>
 
@@ -1703,23 +1707,35 @@ function setView(next) {
             ) : historyAppts.length === 0 ? (
               <div className="db-empty">No appointments for this patient yet.</div>
             ) : (
-              <table className="db-table">
+              <table className="db-table db-table-compact" style={{ tableLayout: "fixed", width: "100%" }}>
                 <thead>
                   <tr>
-                    <th>Reference</th>
-                    <th>Doctor</th>
-                    <th>Date</th>
-                    <th>Status</th>
+                    <th style={{ width: "22%" }}>Reference</th>
+                    <th style={{ width: "26%" }}>Doctor</th>
+                    <th style={{ width: "36%" }}>Date</th>
+                    <th style={{ width: "16%" }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {historyAppts.map((a) => (
                     <tr key={a.id}>
-                      <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5 }}>{a.reference}</td>
-                      <td>{a.doctorName}</td>
-                      <td>{a.date} · {formatTime12h(a.time)}</td>
+                      <td
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 11.5,
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {a.reference}
+                      </td>
+                      <td style={{ fontSize: 13, wordBreak: "break-word" }}>{a.doctorName}</td>
+                      <td style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>
+                        {a.date} · {formatTime12h(a.time)}
+                      </td>
                       <td>
-                        <span className={`db-badge ${a.status.toLowerCase()}`}>{a.status.toLowerCase()}</span>
+                        <span className={`db-badge ${a.status.toLowerCase()}`} style={{ fontSize: 10.5, padding: "3px 7px" }}>
+                          {a.status.toLowerCase()}
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -1739,7 +1755,7 @@ function setView(next) {
       {/* ---------- Manage doctor availability modal (FR-016) ---------- */}
       {availDoctor && (
         <div className="db-modal-overlay" onClick={closeManageAvailability}>
-          <div className="db-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+          <div className="db-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520, overflowX: "hidden" }}>
             <div className="db-modal-title">{availDoctor.fullName}</div>
             <div className="db-modal-sub">Working days, hours, and leave dates</div>
 

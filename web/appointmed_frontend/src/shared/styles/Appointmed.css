@@ -695,6 +695,31 @@
 .db-table tr:last-child td{ border-bottom:none; }
 .db-table tr:hover td{ background:rgba(91,155,213,.05); }
 
+/* ---------- Compact table variant (used inside narrow modals, e.g.
+   patient appointment history) — tighter padding, wraps instead of
+   forcing the table wider than its container. ---------- */
+.db-table-compact{
+  table-layout:fixed;
+}
+
+.db-table-compact th{
+  padding:8px 8px;
+  font-size:10.5px;
+}
+
+.db-table-compact td{
+  padding:9px 8px;
+  vertical-align:top;
+  overflow-wrap:break-word;
+}
+
+/* Slightly wider than the default modal so full reference codes
+   (e.g. APT-000011) sit comfortably on one line without forcing
+   the table to scroll sideways. */
+.db-modal-history{
+  max-width:600px;
+}
+
 /* ---------- Badges ---------- */
 .db-badge{
   display:inline-flex;
@@ -905,6 +930,11 @@
   max-width:460px;
   max-height:88vh;
   overflow-y:auto;
+  /* Prevents the browser from adding a horizontal scrollbar whenever
+     content inside (e.g. a table) is momentarily wider than the modal.
+     Without this, setting overflow-y:auto alone causes overflow-x to
+     compute to "auto" as well, per the CSS overflow spec. */
+  overflow-x:hidden;
   padding:24px;
 }
 
