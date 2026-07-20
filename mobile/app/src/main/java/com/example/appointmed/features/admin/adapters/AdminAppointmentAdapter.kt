@@ -39,7 +39,23 @@ class AdminAppointmentAdapter(
         holder.binding.tvAdminAptStatus.setBackgroundColor(ContextCompat.getColor(context, bgColor))
         holder.binding.tvAdminAptStatus.setTextColor(ContextCompat.getColor(context, textColor))
 
-        if (onOverrideCancel != null && apt.status != "cancelled") {
+        // Mirrors AppointmentService.cancelByAdmin: only an upcoming CONFIRMED
+        // appointment can be override-cancelled — not one already completed,
+        // and not one whose date/time has already passed. "Now" is anchored to
+        // the clinic's timezone (Asia/Manila), matching the backend's CLINIC_ZONE,
+        // since the device's local zone may not match the clinic's.
+        val isUpcoming = try {
+            val clinicZone = java.time.ZoneId.of("Asia/Manila")
+            val appointmentStart = java.time.LocalDateTime.of(
+                java.time.LocalDate.parse(apt.date),
+                java.time.LocalTime.parse(apt.time)
+            )
+            appointmentStart.isAfter(java.time.LocalDateTime.now(clinicZone))
+        } catch (e: Exception) {
+            false
+        }
+
+        if (onOverrideCancel != null && apt.status == "confirmed" && isUpcoming) {
             holder.binding.btnOverrideCancel.visibility = View.VISIBLE
             holder.binding.btnOverrideCancel.setOnClickListener { onOverrideCancel.invoke(apt) }
         } else {
