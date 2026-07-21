@@ -41,7 +41,7 @@ interface AdminApiService {
     ): Response<DoctorResponse>
 
     @DELETE("api/admin/doctors/{id}")
-    suspend fun deleteDoctor(@Path("id") id: Long): Response<String>
+    suspend fun deleteDoctor(@Path("id") id: Long): Response<Unit>
 
     @GET("api/admin/patients")
     suspend fun listPatients(@Query("search") search: String? = null): Response<List<AdminPatientApiResponse>>
@@ -50,7 +50,7 @@ interface AdminApiService {
     suspend fun createPatient(@Body request: PatientCreateRequest): Response<AdminPatientApiResponse>
 
     @DELETE("api/admin/patients/{id}")
-    suspend fun deletePatient(@Path("id") id: Long): Response<String>
+    suspend fun deletePatient(@Path("id") id: Long): Response<Unit>
 
     @GET("api/admin/patients/{id}/appointments")
     suspend fun patientHistory(@Path("id") id: Long): Response<List<AdminAppointmentApiResponse>>
@@ -70,7 +70,7 @@ interface AdminApiService {
     suspend fun createAdmin(@Body request: AdminCreateRequest): Response<AdminSimpleResponse>
 
     @PUT("api/admin/password")
-    suspend fun changeOwnPassword(@Body request: PasswordChangeRequest): Response<String>
+    suspend fun changeOwnPassword(@Body request: PasswordChangeRequest): Response<Unit>
 
     // ---- Doctor availability (FR-016: admin can view and override any doctor's schedule) ----
 

@@ -12,5 +12,5 @@ interface DoctorProfileApiService {
     suspend fun getProfile(): Response<DoctorProfileResponse>
 
     @PUT("api/doctor/profile/password")
-    suspend fun changePassword(@Body request: PasswordChangeRequest): Response<String>
+    suspend fun changePassword(@Body request: PasswordChangeRequest): Response<Unit>
 }
