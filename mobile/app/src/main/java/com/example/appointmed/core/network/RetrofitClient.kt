@@ -12,7 +12,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
-
+import com.example.appointmed.BuildConfig
 
 /**
  * Single shared Retrofit instance for the whole app.
@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
  */
 object RetrofitClient {
 
-    private const val BASE_URL = "https://appointmed-vwfg.onrender.com"
+    private const val BASE_URL = BuildConfig.BASE_URL;
 
     private var retrofit: Retrofit? = null
 
